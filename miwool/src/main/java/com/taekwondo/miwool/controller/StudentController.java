@@ -10,6 +10,7 @@ import com.taekwondo.miwool.dto.student.respDto.BeltHistoryListRespDto;
 import com.taekwondo.miwool.dto.student.respDto.CharacterTraitInfoRespDto;
 import com.taekwondo.miwool.dto.student.respDto.RegisterStudentRespDto;
 import com.taekwondo.miwool.dto.student.respDto.StudentBasicInfoRespDto;
+import com.taekwondo.miwool.dto.student.respDto.StudentListRespDto;
 import com.taekwondo.miwool.service.StudentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -79,9 +81,7 @@ public class StudentController {
             @RequestParam(value = "beltCode", required = false) String beltCode,
             @RequestParam(value = "genderCode", required = false) String genderCodeParam,
             @RequestParam(value = "gradeCode", required = false) String gradeCode,
-            @RequestParam(value = "statusCode", required = false) String statusCode,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
+            @RequestParam(value = "statusCode", required = false) String statusCode) {
         
         try {
             // 파라미터 전처리: 빈 문자열 또는 "전체"를 null로 변환
@@ -99,11 +99,9 @@ public class StudentController {
                     .genderCode(genderCode)
                     .gradeCode(gradeCode)
                     .statusCode(statusCode)
-                    .page(page)
-                    .size(size)
                     .build();
             
-            Map<String, Object> response = studentService.getStudentList(dojangCode, reqDto);
+            List<StudentListRespDto> response = studentService.getStudentList(dojangCode, reqDto);
             
             return ResponseEntity
                     .ok()

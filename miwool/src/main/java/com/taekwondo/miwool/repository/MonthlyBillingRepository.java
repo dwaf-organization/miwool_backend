@@ -290,13 +290,16 @@ public interface MonthlyBillingRepository extends JpaRepository<MonthlyBilling, 
      * 결과: [청구상태, 납부일, 청구일]
      */
     @Query(value = 
-        "SELECT billing_status, paid_at, billing_date " +
+        "SELECT " +
+        "    SUM(billing_amount) AS total_amount, " +
+        "    SUM(CASE WHEN billing_status != '완납' THEN 1 ELSE 0 END) AS unpaid_count, " +
+        "    MAX(paid_at) AS latest_paid_at, " +
+        "    MIN(billing_date) AS earliest_billing_date " +
         "FROM monthly_billing " +
         "WHERE student_code = :studentCode " +
-        "AND billing_month = :billingMonth " +
-        "LIMIT 1",
+        "AND billing_month = :billingMonth",
         nativeQuery = true)
-    List<Object[]> findBillingByMonth(
+    List<Object[]> findBillingByMonthSum(
         @Param("studentCode") String studentCode,
         @Param("billingMonth") String billingMonth);
     

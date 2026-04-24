@@ -78,8 +78,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     	    "AND (:beltCode IS NULL OR s.belt_code = :beltCode) " +
     	    "AND (:statusCode IS NULL OR s.status_code = :statusCode) " +
     	    "AND (:gradeCode IS NULL OR s.grade = :gradeCode) " +
-    	    "ORDER BY s.regist_date DESC " +
-    	    "LIMIT :size OFFSET :offset",
+    	    "ORDER BY s.regist_date DESC ",
     	    nativeQuery = true)
     List<Object[]> findStudentListNative(
             @Param("dojangCode") String dojangCode,
@@ -87,9 +86,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
             @Param("genderCode") Integer genderCode,
             @Param("beltCode") String beltCode,
             @Param("statusCode") String statusCode,
-            @Param("gradeCode") String gradeCode,
-            @Param("size") int size,
-            @Param("offset") int offset
+            @Param("gradeCode") String gradeCode
     );
     
     /**

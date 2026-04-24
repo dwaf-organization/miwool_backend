@@ -41,6 +41,29 @@ public class AppStudentService {
     private final CommonCodeRepository commonCodeRepository;
 
     /**
+     * 앱 제자 프로필 이미지 업데이트
+     */
+    @Transactional
+    public void updateProfileImage(String dojangCode, String studentCode, String profileImageUrl) {
+        log.info("앱 제자 프로필 이미지 업데이트: dojangCode={}, studentCode={}, profileImageUrl={}", 
+                dojangCode, studentCode, profileImageUrl);
+        
+        // 제자 조회
+        Student student = studentRepository.findById(studentCode)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 제자입니다."));
+        
+        // 도장코드 검증
+        if (!student.getDojangCode().equals(dojangCode)) {
+            throw new IllegalArgumentException("해당 도장의 제자가 아닙니다.");
+        }
+        
+        // 프로필 이미지 URL 업데이트
+        student.setProfileImageUrl(profileImageUrl);
+        
+        log.info("앱 제자 프로필 이미지 업데이트 완료: studentCode={}", studentCode);
+    }
+
+    /**
      * 앱 제자 상세 조회
      */
     @Transactional(readOnly = true)
@@ -206,24 +229,33 @@ public class AppStudentService {
     private StudentDetailRespDto.BillingStatusDto getBillingStatus(String studentCode) {
         String currentMonth = YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
         
-        List<Object[]> billingDataList = monthlyBillingRepository.findBillingByMonth(studentCode, currentMonth);
+        List<Object[]> billingDataList = monthlyBillingRepository.findBillingByMonthSum(studentCode, currentMonth);
         
-        if (billingDataList == null || billingDataList.isEmpty()) {
+        if (billingDataList == null || billingDataList.isEmpty() || billingDataList.get(0)[0] == null) {
             return null;
         }
         
         Object[] billingData = billingDataList.get(0);
         
-        String billingStatus = (String) billingData[0];
-        java.sql.Timestamp paidAtSql = (java.sql.Timestamp) billingData[1];
-        Date billingDateSql = (Date) billingData[2];
+        Integer totalAmount = ((Number) billingData[0]).intValue();
+        Long unpaidCount = ((Number) billingData[1]).longValue();
+        java.sql.Timestamp latestPaidAtSql = (java.sql.Timestamp) billingData[2];
+        Date earliestBillingDateSql = (Date) billingData[3];
         
-        LocalDateTime paidAt = paidAtSql != null ? paidAtSql.toLocalDateTime() : null;
-        LocalDate billingDate = billingDateSql.toLocalDate();
+        // 상태 판단: 미납 건수가 0이면 "납부완료", 1 이상이면 "미납"
+        String status = (unpaidCount == 0) ? "납부완료" : "미납";
+        
+        // 처리일자: 납부완료인 경우에만 최근 납부일, 미납이면 null
+        LocalDateTime processedDate = (status.equals("납부완료") && latestPaidAtSql != null) 
+            ? latestPaidAtSql.toLocalDateTime() 
+            : null;
+        
+        LocalDate billingDate = earliestBillingDateSql.toLocalDate();
         
         return StudentDetailRespDto.BillingStatusDto.builder()
-                .status(billingStatus)
-                .processedDate(paidAt)
+                .status(status)
+                .billingAmount(totalAmount)
+                .processedDate(processedDate)
                 .billingDate(billingDate)
                 .build();
     }

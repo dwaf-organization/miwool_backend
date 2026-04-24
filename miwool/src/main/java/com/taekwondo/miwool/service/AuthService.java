@@ -79,27 +79,13 @@ public class AuthService {
         
         log.info("새로운 도장 회원가입 완료: {} ({})", savedDojang.getDojangName(), savedDojang.getDojangCode());
         
-        // 6. JWT 토큰 생성
-        String accessToken = jwtUtil.createAccessToken(
-                savedDojang.getDojangCode(),
-                savedDojang.getDojangId(),
-                savedDojang.getDojangName()
-        );
-        
-        String refreshToken = jwtUtil.createRefreshToken(
-                savedDojang.getDojangCode(),
-                savedDojang.getDojangId()
-        );
-        
-        // 7. 응답 DTO 생성
+        // 6. 응답 DTO 생성
         return RegisterRespDto.builder()
                 .dojangCode(savedDojang.getDojangCode())
                 .dojangId(savedDojang.getDojangId())
                 .dojangName(savedDojang.getDojangName())
                 .masterName(savedDojang.getMasterName())
                 .approvalYn(savedDojang.getApprovalYn())
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
                 .build();
     }
     

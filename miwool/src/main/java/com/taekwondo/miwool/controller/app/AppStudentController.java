@@ -1,6 +1,7 @@
 package com.taekwondo.miwool.controller.app;
 
 import com.taekwondo.miwool.common.dto.RespDto;
+import com.taekwondo.miwool.dto.app.student.reqDto.ProfileImageUpdateReqDto;
 import com.taekwondo.miwool.dto.app.student.respDto.StudentDetailRespDto;
 import com.taekwondo.miwool.dto.app.student.respDto.StudentListRespDto;
 import com.taekwondo.miwool.service.app.AppStudentService;
@@ -17,6 +18,33 @@ import org.springframework.web.bind.annotation.*;
 public class AppStudentController {
 
     private final AppStudentService appStudentService;
+
+    // 앱 제자 프로필 이미지 업데이트
+    @PutMapping("/profile-image")
+    public ResponseEntity<?> updateProfileImage(@RequestBody ProfileImageUpdateReqDto reqDto) {
+        
+        try {
+            appStudentService.updateProfileImage(
+                    reqDto.getDojangCode(),
+                    reqDto.getStudentCode(),
+                    reqDto.getProfileImageUrl());
+            
+            return ResponseEntity
+                    .ok()
+                    .body(RespDto.success("프로필 이미지를 업데이트했습니다.", null));
+            
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(RespDto.fail(e.getMessage()));
+            
+        } catch (Exception e) {
+            log.error("앱 제자 프로필 이미지 업데이트 중 오류 발생", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespDto.fail("프로필 이미지 업데이트 중 오류가 발생했습니다."));
+        }
+    }
 
     // 앱 제자 상세 조회
     @GetMapping("/detail")

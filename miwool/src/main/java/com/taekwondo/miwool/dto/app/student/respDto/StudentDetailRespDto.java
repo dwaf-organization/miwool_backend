@@ -96,6 +96,7 @@ public class StudentDetailRespDto {
     @AllArgsConstructor
     public static class BillingStatusDto {
         private String status; // 납부완료/미납
+        private Integer billingAmount; // 청구금액
         private LocalDateTime processedDate; // 처리일자 (paidAt)
         private LocalDate billingDate; // 청구일
     }

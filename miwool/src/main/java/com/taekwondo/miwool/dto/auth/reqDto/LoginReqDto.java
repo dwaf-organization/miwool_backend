@@ -12,9 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginReqDto {
     
-    @NotBlank(message = "아이디를 입력해주세요")
+    @NotBlank(message = "아이디 또는 비밀번호가 일치하지 않습니다.")
     private String dojangId;  // 아이디
     
-    @NotBlank(message = "비밀번호를 입력해주세요")
+    @NotBlank(message = "아이디 또는 비밀번호가 일치하지 않습니다.")
     private String dojangPw;  // 비밀번호
 }

@@ -249,11 +249,9 @@ public class StudentService {
      * 제자 목록 조회 (Native Query 사용 - 완전한 DB 처리)
      * 모든 필터링 + 페이징을 DB에서 처리하여 최고 성능 달성
      */
-    public Map<String, Object> getStudentList(String dojangCode, StudentListReqDto reqDto) {
+    public List<StudentListRespDto> getStudentList(String dojangCode, StudentListReqDto reqDto) {
         
         log.info("제자 목록 조회 시작: dojangCode={}, reqDto={}", dojangCode, reqDto);
-        
-        int offset = (reqDto.getPage() - 1) * reqDto.getSize();
         
         // 1. DB에서 완전히 필터링된 데이터 조회 (1번의 쿼리)
         List<Object[]> rawResults = studentRepository.findStudentListNative(
@@ -262,9 +260,7 @@ public class StudentService {
                 reqDto.getGenderCode(),
                 reqDto.getBeltCode(),
                 reqDto.getStatusCode(),
-                reqDto.getGradeCode(),
-                reqDto.getSize(),
-                offset
+                reqDto.getGradeCode()
         );
         
         // 2. 전체 개수 조회 (페이징용)
@@ -334,28 +330,14 @@ public class StudentService {
         
         log.info("DTO 변환 완료: {}건", resultList.size());
         
-        // 4. PageInfo 생성
-        int totalPages = (int) Math.ceil((double) totalElements / reqDto.getSize());
-        boolean hasNext = reqDto.getPage() < totalPages;
-        boolean hasPrevious = reqDto.getPage() > 1;
-        
-        PageInfo pageInfo = PageInfo.builder()
-                .currentPage(reqDto.getPage())
-                .totalPages(totalPages)
-                .size(reqDto.getSize())
-                .hasNext(hasNext)
-                .hasPrevious(hasPrevious)
-                .build();
-        
         // 5. 응답 생성
         Map<String, Object> response = new HashMap<>();
         response.put("content", resultList);
         response.put("totalElements", totalElements);
-        response.put("pageInfo", pageInfo);
         
         log.info("제자 목록 조회 완료: 총 {}명, 현재 페이지 {}명", totalElements, resultList.size());
         
-        return response;
+        return resultList;
     }
     
     /**

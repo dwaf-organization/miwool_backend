@@ -16,6 +16,4 @@ public class RegisterRespDto {
     private String dojangName;  // 도장명
     private String masterName;  // 관장명
     private Integer approvalYn;  // 승인여부 (1=승인, 0=미승인)
-    private String accessToken;  // Access Token
-    private String refreshToken;  // Refresh Token
 }

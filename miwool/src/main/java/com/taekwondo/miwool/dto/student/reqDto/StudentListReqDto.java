@@ -16,10 +16,4 @@ public class StudentListReqDto {
     private Integer genderCode;    // 성별 (1=남, 2=여, 3=기타)
     private String gradeCode;      // 학년 ("유아", "초1", "초2", ..., "성인")
     private String statusCode;     // 재원상태 ("재원", "퇴관", "체험", 최신값 기준)
-    
-    @Builder.Default
-    private int page = 0;          // 페이지 번호 (기본 0)
-    
-    @Builder.Default
-    private int size = 10;         // 페이지 크기 (기본 10)
 }
