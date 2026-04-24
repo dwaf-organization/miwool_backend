@@ -538,7 +538,7 @@ public class StudentService {
         
         if (reqDto.getPurposeCodes() != null && !reqDto.getPurposeCodes().isEmpty()) {
             for (String purposeCode : reqDto.getPurposeCodes()) {
-                String etcValue = "PURPOSE_009".equals(purposeCode) ? reqDto.getPurposeEtcValue() : null;
+                String etcValue = "PURPOSE_999".equals(purposeCode) ? reqDto.getPurposeEtcValue() : null;
                 
                 StudentPurpose studentPurpose = StudentPurpose.builder()
                         .studentCode(reqDto.getStudentCode())
