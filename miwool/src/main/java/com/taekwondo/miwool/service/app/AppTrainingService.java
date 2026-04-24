@@ -55,7 +55,7 @@ public class AppTrainingService {
         
         // ClassMst 직접 조회
         List<ClassMst> classes = classMstRepository
-                .findByDojangCodeOrderByCreatedAtAsc(dojangCode);
+                .findByDojangCodeOrderByCreatedAtDesc(dojangCode);
         
         // 앱 DTO로 변환 (dayOfWeek 포함)
         return classes.stream()
@@ -95,6 +95,7 @@ public class AppTrainingService {
                         .adjustmentAmount(reqDto.getAdjustmentAmount())
                         .adjustmentDetail(reqDto.getAdjustmentDetail())
                         .trainingStartDate(reqDto.getTrainingStartDate())
+                        .trainingEndDate(reqDto.getTrainingEndDate())
                         .build();
         
         // 웹 서비스 메서드 재사용

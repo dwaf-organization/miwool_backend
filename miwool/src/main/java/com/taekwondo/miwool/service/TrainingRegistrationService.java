@@ -71,13 +71,14 @@ public class TrainingRegistrationService {
         int actualPrice = basePrice + adjustmentAmount;
         
         LocalDate trainingStartDate = reqDto.getTrainingStartDate();
+        LocalDate trainingEndDate = reqDto.getTrainingEndDate(); // 수련종료일
         int billingCycleDay = trainingStartDate.getDayOfMonth();
         
         // nextBillingDate = trainingStartDate + 1개월
         LocalDate nextBillingDate = trainingStartDate.plusMonths(1);
         
-        // trainingEndDate = trainingStartDate + 1개월
-        LocalDate trainingEndDate = trainingStartDate.plusMonths(1);
+        // MonthlyBilling의 trainingEndDate = trainingStartDate + 1개월
+        LocalDate billingTrainingEndDate = trainingStartDate.plusMonths(1);
         
         // billingMonth = "YYYY-MM"
         String billingMonth = trainingStartDate.format(DateTimeFormatter.ofPattern("yyyy-MM"));
@@ -91,7 +92,7 @@ public class TrainingRegistrationService {
                 .dropoffLocation(reqDto.getDropoffLocation())
                 .handoverMethod(reqDto.getHandoverMethod())
                 .startDate(trainingStartDate)
-                .endDate(null)
+                .endDate(trainingEndDate) // 수련종료일 설정
                 .isCurrent(1)
                 .build();
         
@@ -105,7 +106,7 @@ public class TrainingRegistrationService {
                     .classCode(classCode)
                     .trainingInfoCode(studentTraining.getTrainingInfoCode())  // FK 연결
                     .startDate(trainingStartDate)
-                    .endDate(null)
+                    .endDate(trainingEndDate) // 수련종료일 설정
                     .isCurrent(1)
                     .build();
             
@@ -124,7 +125,7 @@ public class TrainingRegistrationService {
                 .billingCycleDay(billingCycleDay)
                 .nextBillingDate(nextBillingDate)
                 .applyStartDate(trainingStartDate)
-                .applyEndDate(null)
+                .applyEndDate(trainingEndDate) // 수련종료일 설정
                 .isCurrent(1)
                 .build();
         
@@ -138,7 +139,7 @@ public class TrainingRegistrationService {
                 .billingMonth(billingMonth)
                 .billingDate(trainingStartDate)
                 .trainingStartDate(trainingStartDate)
-                .trainingEndDate(trainingEndDate)
+                .trainingEndDate(billingTrainingEndDate)
                 .billingAmount(actualPrice)
                 .billingStatus("미납")
                 .build();

@@ -40,4 +40,6 @@ public class RegisterTrainingReqDto {
     // 시작일
     @NotNull(message = "수련시작일은 필수입니다")
     private LocalDate trainingStartDate; // 수련시작일
+    
+    private LocalDate trainingEndDate; // 수련종료일
 }

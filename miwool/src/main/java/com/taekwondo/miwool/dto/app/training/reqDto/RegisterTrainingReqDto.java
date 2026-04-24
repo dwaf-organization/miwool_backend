@@ -31,4 +31,5 @@ public class RegisterTrainingReqDto {
     
     // 시작일
     private LocalDate trainingStartDate; // 수련시작일
+    private LocalDate trainingEndDate; // 수련종료일
 }
