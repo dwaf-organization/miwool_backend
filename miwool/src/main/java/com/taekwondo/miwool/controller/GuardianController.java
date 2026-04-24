@@ -2,6 +2,7 @@ package com.taekwondo.miwool.controller;
 
 import com.taekwondo.miwool.common.dto.RespDto;
 import com.taekwondo.miwool.dto.guardian.reqDto.SaveGuardianReqDto;
+import com.taekwondo.miwool.dto.guardian.respDto.GuardianDetailRespDto;
 import com.taekwondo.miwool.dto.guardian.respDto.GuardianInfoRespDto;
 import com.taekwondo.miwool.service.GuardianService;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,36 @@ public class GuardianController {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(RespDto.fail("보호자 정보 조회 중 오류가 발생했습니다."));
+        }
+    }
+    
+    /**
+     * 보호자 상세 조회
+     * GET /api/v1/guardians/detail?guardianCode={guardianCode}&studentCode={studentCode}
+     */
+    @GetMapping("/detail")
+    public ResponseEntity<?> getGuardianDetail(
+            @RequestParam(value = "guardianCode", required = true) String guardianCode,
+            @RequestParam(value = "studentCode", required = true) String studentCode) {
+        
+        try {
+            GuardianDetailRespDto respDto = guardianService.getGuardianDetail(guardianCode, studentCode);
+            
+            return ResponseEntity
+                    .ok()
+                    .body(RespDto.success("보호자 상세 정보를 조회했습니다.", respDto));
+            
+        } catch (IllegalArgumentException e) {
+            log.error("보호자 상세 조회 실패: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(RespDto.fail(e.getMessage()));
+            
+        } catch (Exception e) {
+            log.error("보호자 상세 조회 중 오류 발생", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespDto.fail("보호자 상세 조회 중 오류가 발생했습니다."));
         }
     }
     

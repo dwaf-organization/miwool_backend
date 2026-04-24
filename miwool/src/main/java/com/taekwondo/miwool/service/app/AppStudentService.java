@@ -1,5 +1,6 @@
 package com.taekwondo.miwool.service.app;
 
+import com.taekwondo.miwool.dto.app.student.reqDto.StudentRegisterReqDto;
 import com.taekwondo.miwool.dto.app.student.respDto.StudentDetailRespDto;
 import com.taekwondo.miwool.dto.app.student.respDto.StudentListRespDto;
 import com.taekwondo.miwool.entity.*;
@@ -39,6 +40,150 @@ public class AppStudentService {
     private final StudentImprovementRepository studentImprovementRepository;
     private final StudentStrengthRepository studentStrengthRepository;
     private final CommonCodeRepository commonCodeRepository;
+    private final StudentBeltRepository studentBeltRepository;
+    private final StudentStatusRepository studentStatusRepository;
+
+    /**
+     * 앱 제자 등록
+     */
+    @Transactional
+    public String registerStudent(StudentRegisterReqDto reqDto) {
+        log.info("앱 제자 등록 시작: dojangCode={}, studentName={}", reqDto.getDojangCode(), reqDto.getStudentName());
+        
+        String dojangCode = reqDto.getDojangCode();
+        
+        // 1. 제자 코드 생성
+        String studentCode = generateStudentCode(dojangCode);
+        
+        // 2. 보호자 코드 생성
+        String guardianCode = generateGuardianCode(dojangCode);
+        
+        // 3. Student 엔티티 생성 및 저장
+        Student student = Student.builder()
+                .studentCode(studentCode)
+                .dojangCode(dojangCode)
+                .studentName(reqDto.getStudentName())
+                .registDate(LocalDate.now())
+                .birthDate(LocalDate.parse(reqDto.getBirthDate()))
+                .genderCode(reqDto.getGenderCode())
+                .genderName(reqDto.getGenderName())
+                .studentPhone(reqDto.getStudentPhone())
+                .schoolName(reqDto.getSchoolName())
+                .grade(reqDto.getGrade())
+                .className(reqDto.getClassName())
+                .statusCode("재원")
+                .beltCode(reqDto.getBeltCode())
+                .isDeleted(0)
+                .build();
+        studentRepository.save(student);
+        
+        // 4. Guardian 엔티티 생성 및 저장
+        Guardian guardian = Guardian.builder()
+                .guardianCode(guardianCode)
+                .dojangCode(dojangCode)
+                .guardianName(reqDto.getGuardianName())
+                .guardianPhone(reqDto.getGuardianPhone())
+                .build();
+        guardianRepository.save(guardian);
+        
+        // 5. StudentGuardian 관계 저장
+        StudentGuardian studentGuardian = StudentGuardian.builder()
+                .studentCode(studentCode)
+                .guardianCode(guardianCode)
+                .relationship(reqDto.getGuardianRelationship())
+                .build();
+        studentGuardianRepository.save(studentGuardian);
+        
+        // 6. StudentBelt 급수 이력 저장
+        String beltHistoryCode = generateBeltHistoryCode(dojangCode);
+        StudentBelt studentBelt = StudentBelt.builder()
+                .beltHistoryCode(beltHistoryCode)
+                .studentCode(studentCode)
+                .beltCode(reqDto.getBeltCode())
+                .taekwondoMonths(reqDto.getTaekwondoMonths() != null ? reqDto.getTaekwondoMonths() : 0)
+                .acquiredAt(LocalDate.now())
+                .build();
+        studentBeltRepository.save(studentBelt);
+        
+        // 7. StudentStatus 재원상태 이력 저장
+        String statusHistoryCode = generateStatusHistoryCode(dojangCode);
+        StudentStatus studentStatus = StudentStatus.builder()
+                .statusHistoryCode(statusHistoryCode)
+                .studentCode(studentCode)
+                .statusCode("재원")
+                .changeDate(LocalDate.now())
+                .statusReason("신규 입관")
+                .build();
+        studentStatusRepository.save(studentStatus);
+        
+        log.info("앱 제자 등록 완료: studentCode={}", studentCode);
+        
+        return studentCode;
+    }
+
+    /**
+     * 제자 코드 생성 (도장코드-SYYnnn)
+     */
+    private String generateStudentCode(String dojangCode) {
+        String year = String.valueOf(LocalDate.now().getYear()).substring(2);
+        String prefix = dojangCode + "-S" + year;
+
+        return studentRepository.findFirstByStudentCodeStartingWithOrderByStudentCodeDesc(prefix)
+                .map(student -> {
+                    String lastCode = student.getStudentCode();
+                    int nextSeq = Integer.parseInt(lastCode.substring(lastCode.length() - 3)) + 1;
+                    return prefix + String.format("%03d", nextSeq);
+                })
+                .orElse(prefix + "001");
+    }
+
+    /**
+     * 보호자 코드 생성 (도장코드-GYYnnn)
+     */
+    private String generateGuardianCode(String dojangCode) {
+        String year = String.valueOf(LocalDate.now().getYear()).substring(2);
+        String prefix = dojangCode + "-G" + year;
+
+        return guardianRepository.findFirstByGuardianCodeStartingWithOrderByGuardianCodeDesc(prefix)
+                .map(guardian -> {
+                    String lastCode = guardian.getGuardianCode();
+                    int nextSeq = Integer.parseInt(lastCode.substring(lastCode.length() - 3)) + 1;
+                    return prefix + String.format("%03d", nextSeq);
+                })
+                .orElse(prefix + "001");
+    }
+
+    /**
+     * 재원상태 이력 코드 생성 (도장코드-SSYYnnn)
+     */
+    private String generateStatusHistoryCode(String dojangCode) {
+        String year = String.valueOf(LocalDate.now().getYear()).substring(2);
+        String prefix = dojangCode + "-SS" + year;
+
+        return studentStatusRepository.findFirstByStatusHistoryCodeStartingWithOrderByStatusHistoryCodeDesc(prefix)
+                .map(history -> {
+                    String lastCode = history.getStatusHistoryCode();
+                    int nextSeq = Integer.parseInt(lastCode.substring(lastCode.length() - 3)) + 1;
+                    return prefix + String.format("%03d", nextSeq);
+                })
+                .orElse(prefix + "001");
+    }
+
+    /**
+     * 급수 이력 코드 생성 (도장코드-SBYYnnn)
+     */
+    private String generateBeltHistoryCode(String dojangCode) {
+        String year = String.valueOf(LocalDate.now().getYear()).substring(2);
+        String prefix = dojangCode + "-SB" + year;
+
+        return studentBeltRepository.findFirstByBeltHistoryCodeStartingWithOrderByBeltHistoryCodeDesc(prefix)
+                .map(history -> {
+                    String lastCode = history.getBeltHistoryCode();
+                    int nextSeq = Integer.parseInt(lastCode.substring(lastCode.length() - 3)) + 1;
+                    return prefix + String.format("%03d", nextSeq);
+                })
+                .orElse(prefix + "001");
+    }
 
     /**
      * 앱 제자 프로필 이미지 업데이트

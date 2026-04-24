@@ -1,6 +1,7 @@
 package com.taekwondo.miwool.service;
 
 import com.taekwondo.miwool.dto.guardian.reqDto.SaveGuardianReqDto;
+import com.taekwondo.miwool.dto.guardian.respDto.GuardianDetailRespDto;
 import com.taekwondo.miwool.dto.guardian.respDto.GuardianInfoDto;
 import com.taekwondo.miwool.dto.guardian.respDto.GuardianInfoRespDto;
 import com.taekwondo.miwool.entity.Guardian;
@@ -76,6 +77,36 @@ public class GuardianService {
         
         return GuardianInfoRespDto.builder()
                 .guardians(guardianInfoList)
+                .build();
+    }
+    
+    /**
+     * 보호자 상세 조회
+     */
+    public GuardianDetailRespDto getGuardianDetail(String guardianCode, String studentCode) {
+        log.info("보호자 상세 조회: guardianCode={}, studentCode={}", guardianCode, studentCode);
+        
+        // 1. Guardian 조회
+        Guardian guardian = guardianRepository.findById(guardianCode)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 보호자입니다."));
+        
+        // 2. StudentGuardian에서 관계 조회
+        StudentGuardian studentGuardian = studentGuardianRepository
+                .findByStudentCodeAndGuardianCode(studentCode, guardianCode)
+                .orElseThrow(() -> new IllegalArgumentException("제자-보호자 매핑 정보를 찾을 수 없습니다."));
+        
+        log.info("보호자 상세 조회 완료");
+        
+        return GuardianDetailRespDto.builder()
+                .guardianCode(guardian.getGuardianCode())
+                .guardianName(guardian.getGuardianName())
+                .relationship(studentGuardian.getRelationship())
+                .guardianPhone(guardian.getGuardianPhone())
+                .guardianEmergencyPhone(guardian.getGuardianEmergencyPhone())
+                .guardianBirthDate(guardian.getGuardianBirthDate())
+                .guardianJob(guardian.getGuardianJob())
+                .guardianAnniversaryDate(guardian.getGuardianAnniversaryDate())
+                .guardianRequest(guardian.getGuardianRequest())
                 .build();
     }
     

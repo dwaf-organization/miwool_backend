@@ -1,6 +1,5 @@
 package com.taekwondo.miwool.service;
 
-import com.taekwondo.miwool.common.dto.PageInfo;
 import com.taekwondo.miwool.dto.student.reqDto.CreateBeltHistoryReqDto;
 import com.taekwondo.miwool.dto.student.reqDto.RegisterStudentReqDto;
 import com.taekwondo.miwool.dto.student.reqDto.SaveCharacterTraitReqDto;

@@ -2,6 +2,7 @@ package com.taekwondo.miwool.controller.app;
 
 import com.taekwondo.miwool.common.dto.RespDto;
 import com.taekwondo.miwool.dto.app.student.reqDto.ProfileImageUpdateReqDto;
+import com.taekwondo.miwool.dto.app.student.reqDto.StudentRegisterReqDto;
 import com.taekwondo.miwool.dto.app.student.respDto.StudentDetailRespDto;
 import com.taekwondo.miwool.dto.app.student.respDto.StudentListRespDto;
 import com.taekwondo.miwool.service.app.AppStudentService;
@@ -11,6 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/app/students")
@@ -18,6 +22,28 @@ import org.springframework.web.bind.annotation.*;
 public class AppStudentController {
 
     private final AppStudentService appStudentService;
+
+    // 앱 제자 등록
+    @PostMapping
+    public ResponseEntity<?> registerStudent(@RequestBody StudentRegisterReqDto reqDto) {
+        
+        try {
+            String studentCode = appStudentService.registerStudent(reqDto);
+            
+            Map<String, String> data = new HashMap<>();
+            data.put("studentCode", studentCode);
+            
+            return ResponseEntity
+                    .ok()
+                    .body(RespDto.success("제자를 등록했습니다.", data));
+            
+        } catch (Exception e) {
+            log.error("앱 제자 등록 중 오류 발생", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespDto.fail("제자 등록 중 오류가 발생했습니다."));
+        }
+    }
 
     // 앱 제자 프로필 이미지 업데이트
     @PutMapping("/profile-image")
