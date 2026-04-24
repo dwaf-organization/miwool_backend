@@ -135,8 +135,8 @@ public class StudentService {
         // 7. StudentPurpose 등록목적 다중 저장
         if (reqDto.getPurposeCodes() != null && !reqDto.getPurposeCodes().isEmpty()) {
             for (String purposeCode : reqDto.getPurposeCodes()) {
-                // PURPOSE_009(기타)일 때만 etcValue 저장
-                String etcValue = "PURPOSE_009".equals(purposeCode) ? reqDto.getPurposeEtcValue() : null;
+                // PURPOSE_999(기타)일 때만 etcValue 저장
+                String etcValue = "PURPOSE_999".equals(purposeCode) ? reqDto.getPurposeEtcValue() : null;
                 
                 StudentPurpose studentPurpose = StudentPurpose.builder()
                         .studentCode(studentCode)
@@ -358,7 +358,7 @@ public class StudentService {
         
         for (StudentPurpose purpose : purposes) {
             purposeCodes.add(purpose.getPurposeCode());
-            if ("PURPOSE_009".equals(purpose.getPurposeCode())) {
+            if ("PURPOSE_999".equals(purpose.getPurposeCode())) {
                 purposeEtcValue = purpose.getEtcValue();
             }
         }
