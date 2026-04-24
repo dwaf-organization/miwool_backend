@@ -24,7 +24,7 @@ public class AppStudentController {
     private final AppStudentService appStudentService;
 
     // 앱 제자 등록
-    @PostMapping
+    @PostMapping("/register")
     public ResponseEntity<?> registerStudent(@RequestBody StudentRegisterReqDto reqDto) {
         
         try {

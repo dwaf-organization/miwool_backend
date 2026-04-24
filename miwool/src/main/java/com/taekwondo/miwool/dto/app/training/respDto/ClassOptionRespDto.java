@@ -1,4 +1,4 @@
-package com.taekwondo.miwool.dto.training.respDto;
+package com.taekwondo.miwool.dto.app.training.respDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

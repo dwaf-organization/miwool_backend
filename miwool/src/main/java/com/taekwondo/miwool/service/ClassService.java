@@ -89,13 +89,13 @@ public class ClassService {
     
     /**
      * 수업 선택용 목록 조회
-     * "수업명 수업시간(11:00 ~ 13:00)"
+     * "수업명 수업시간(11:00~13:00)"
      */
     public List<ClassOptionRespDto> getClassOptions(String dojangCode) {
         log.info("수업 선택용 목록 조회: dojangCode={}", dojangCode);
         
         List<ClassMst> classes = classMstRepository
-                .findByDojangCodeOrderByCreatedAtDesc(dojangCode);
+                .findByDojangCodeOrderByCreatedAtAsc(dojangCode);
         
         return classes.stream()
                 .map(cls -> {
@@ -107,10 +107,12 @@ public class ClassService {
                     return ClassOptionRespDto.builder()
                             .classCode(cls.getClassCode())
                             .displayText(displayText)
+                            .dayOfWeek(cls.getDayOfWeek())  // dayOfWeek 추가
                             .build();
                 })
                 .collect(Collectors.toList());
     }
+
     
     /**
      * 수업 상세 조회 (학생 목록 포함)

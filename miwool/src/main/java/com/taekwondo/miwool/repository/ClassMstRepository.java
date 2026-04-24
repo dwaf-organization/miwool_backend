@@ -16,6 +16,11 @@ public interface ClassMstRepository extends JpaRepository<ClassMst, String> {
     List<ClassMst> findByDojangCodeOrderByCreatedAtDesc(String dojangCode);
     
     /**
+     * 도장별 수업 목록 조회 (과거순)
+     */
+    List<ClassMst> findByDojangCodeOrderByCreatedAtAsc(String dojangCode);
+    
+    /**
      * classCode 자동 생성용
      * 형식: MW26001-CLS001
      */
