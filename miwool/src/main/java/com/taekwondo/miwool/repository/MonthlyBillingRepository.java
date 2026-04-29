@@ -302,6 +302,43 @@ public interface MonthlyBillingRepository extends JpaRepository<MonthlyBilling, 
     List<Object[]> findBillingByMonthSum(
         @Param("studentCode") String studentCode,
         @Param("billingMonth") String billingMonth);
-    
-    
+
+    // 상단 카드 데이터 조회
+    @Query(value = """
+        SELECT 
+            COUNT(DISTINCT CASE WHEN billing_status = '납부완료' THEN mb.student_code END) as completed_count,
+            COALESCE(SUM(CASE WHEN billing_status = '납부완료' THEN billing_amount ELSE 0 END), 0) as completed_revenue,
+            COUNT(DISTINCT CASE WHEN billing_status = '미납' THEN mb.student_code END) as unpaid_count,
+            COALESCE(SUM(CASE WHEN billing_status = '미납' THEN billing_amount ELSE 0 END), 0) as unpaid_revenue
+        FROM monthly_billing mb
+        INNER JOIN student_mst s ON mb.student_code = s.student_code
+        WHERE s.dojang_code = :dojangCode
+          AND mb.billing_month = :month
+        """, nativeQuery = true)
+    List<Object[]> findBillingCardData(
+            @Param("dojangCode") String dojangCode,
+            @Param("month") String month);
+ 
+    // 제자 납부 리스트 조회
+    @Query(value = """
+        SELECT 
+            mb.billing_code,
+            s.gender_code,
+            s.student_name,
+            s.birth_date,
+            s.grade,
+            mb.billing_amount,
+            mb.billing_date,
+            mb.billing_status
+        FROM monthly_billing mb
+        INNER JOIN student_mst s ON mb.student_code = s.student_code
+        WHERE s.dojang_code = :dojangCode
+          AND mb.billing_month = :month
+          AND (:paymentStatus = '전체' OR mb.billing_status = :paymentStatus)
+        ORDER BY s.student_name
+        """, nativeQuery = true)
+    List<Object[]> findBillingStudentList(
+            @Param("dojangCode") String dojangCode,
+            @Param("month") String month,
+            @Param("paymentStatus") String paymentStatus);
 }

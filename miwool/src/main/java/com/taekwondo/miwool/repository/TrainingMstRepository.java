@@ -18,7 +18,7 @@ public interface TrainingMstRepository extends JpaRepository<TrainingMst, String
     /**
      * 도장별 패키지 목록 조회 (과거순)
      */
-    List<TrainingMst> findByDojangCodeOrderByCreatedAtAsc(String dojangCode);
+    List<TrainingMst> findByDojangCodeOrderByPackageCodeAsc(String dojangCode);
     
     /**
      * packageCode 자동 생성용

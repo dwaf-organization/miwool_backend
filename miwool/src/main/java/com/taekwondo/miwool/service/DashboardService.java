@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 @Slf4j
 @Service
@@ -218,7 +219,7 @@ public class DashboardService {
         }
 
         // 4. 모든 주차 병합 (입관 + 매출)
-        Set<String> allWeeks = new LinkedHashSet<>();
+        Set<String> allWeeks = new TreeSet<>();
         allWeeks.addAll(enrollmentMap.keySet());
         allWeeks.addAll(revenueMap.keySet());
 

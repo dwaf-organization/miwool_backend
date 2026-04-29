@@ -74,6 +74,7 @@ public class StudentService {
                 .genderCode(reqDto.getGenderCode())
                 .genderName(reqDto.getGenderName())
                 .studentPhone(reqDto.getStudentPhone())
+                .profileImageUrl(reqDto.getProfileImage())
                 .studentZipcode(reqDto.getStudentZipcode())
                 .studentAdd(reqDto.getStudentAdd())
                 .studentAdd2(reqDto.getStudentAdd2())

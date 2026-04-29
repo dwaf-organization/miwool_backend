@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,32 +158,37 @@ public class CommonCodeService {
         log.info("제자 선택 팝업 조회 시작: studentSearch={}, beltCode={}, genderCode={}, grade={}", 
                 studentSearch, beltCode, genderCode, grade);
         
-        // 정렬 설정 (제자명 오름차순)
-        Sort sort = Sort.by(Sort.Direction.ASC, "student_name");
-        
         // Repository에서 Native Query로 조회
-        List<Student> students = studentRepository.findStudentsForSelection(
+        List<Object[]> results = studentRepository.findStudentsForSelection(
                 studentSearch,
                 beltCode,
                 genderCode,
                 grade,
-                dojangCode,
-                sort
+                dojangCode
         );
         
         // DTO 변환
-        List<StudentSelectionRespDto> result = students.stream()
-                .map((Student student) -> {
+        List<StudentSelectionRespDto> result = results.stream()
+                .map(row -> {
+                    String studentCode = (String) row[0];
+                    String studentName = (String) row[1];
+                    Integer genderCodeVal = (Integer) row[2];
+                    LocalDate birthDate = ((java.sql.Date) row[3]).toLocalDate();
+                    String gradeVal = (String) row[4];
+                    String beltCodeVal = (String) row[5];
+                    String beltName = (String) row[6];
+                    
                     // 한국나이 계산
-                    int age = AgeUtil.calculateKoreanAge(student.getBirthDate());
+                    int age = AgeUtil.calculateKoreanAge(birthDate);
                     
                     return StudentSelectionRespDto.builder()
-                            .studentCode(student.getStudentCode())
-                            .genderCode(student.getGenderCode())
-                            .studentName(student.getStudentName())
+                            .studentCode(studentCode)
+                            .genderCode(genderCodeVal)
+                            .studentName(studentName)
                             .age(age)
-                            .grade(student.getGrade())
-                            .beltCode(student.getBeltCode())
+                            .grade(gradeVal)
+                            .beltCode(beltCodeVal)
+                            .beltName(beltName)
                             .build();
                 })
                 .collect(Collectors.toList());

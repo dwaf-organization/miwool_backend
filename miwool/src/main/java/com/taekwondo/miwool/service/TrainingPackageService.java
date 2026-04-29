@@ -77,7 +77,7 @@ public class TrainingPackageService {
         log.info("패키지 선택용 목록 조회: dojangCode={}", dojangCode);
         
         List<TrainingMst> packages = trainingMstRepository
-                .findByDojangCodeOrderByCreatedAtAsc(dojangCode);
+                .findByDojangCodeOrderByPackageCodeAsc(dojangCode);
         
         return packages.stream()
                 .map(pkg -> {

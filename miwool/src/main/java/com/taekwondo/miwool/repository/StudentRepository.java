@@ -115,11 +115,20 @@ public interface StudentRepository extends JpaRepository<Student, String> {
      * 제자 선택 팝업 조회 (Native Query)
      * 조건: 제자명(코드/명 부분조회), 급수, 성별, 학년
      * 재원 상태인 학생만 조회
+     * 급수명 포함
      */
-    @Query(value = "SELECT s.* " +
+    @Query(value = "SELECT " +
+                   "    s.student_code, " +
+                   "    s.student_name, " +
+                   "    s.gender_code, " +
+                   "    s.birth_date, " +
+                   "    s.grade, " +
+                   "    s.belt_code, " +
+                   "    c.code_name AS belt_name " +
                    "FROM student_mst s " +
+                   "LEFT JOIN common_mst c ON s.belt_code = c.common_code " +
                    "WHERE s.dojang_code = :dojangCode " +
-                   "  AND s.status_code = '재원'  " +  // 재원 상태만 조회
+                   "  AND s.status_code = '재원'  " +
                    "  AND (:studentSearch IS NULL " +
                    "       OR s.student_code LIKE CONCAT('%', :studentSearch, '%') " +
                    "       OR s.student_name LIKE CONCAT('%', :studentSearch, '%')) " +
@@ -128,13 +137,12 @@ public interface StudentRepository extends JpaRepository<Student, String> {
                    "  AND (:grade IS NULL OR s.grade = :grade) " +
                    "ORDER BY s.student_name ASC",
            nativeQuery = true)
-    List<Student> findStudentsForSelection(
+    List<Object[]> findStudentsForSelection(
             @Param("studentSearch") String studentSearch,
             @Param("beltCode") String beltCode,
             @Param("genderCode") Integer genderCode,
             @Param("grade") String grade,
-            @Param("dojangCode") String dojangCode,
-            Sort sort);
+            @Param("dojangCode") String dojangCode);
 
     /**
      * 대시보드 - 월별 입관생 수

@@ -46,7 +46,7 @@ public interface TuitionPaymentRepository extends JpaRepository<TuitionPayment, 
         "INNER JOIN student_mst s ON mb.student_code = s.student_code " +
         "WHERE s.dojang_code = :dojangCode " +
         "AND DATE_FORMAT(tp.payment_date, '%Y%m') = :month " +
-        "ORDER BY tp.payment_date DESC, s.student_name ASC",
+        "ORDER BY tp.payment_date ASC, s.student_name ASC",
         nativeQuery = true)
     List<Object[]> getDailyPaymentList(
         @Param("dojangCode") String dojangCode,

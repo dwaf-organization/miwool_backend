@@ -71,7 +71,7 @@ public class ClassService {
         log.info("수업 목록 조회: dojangCode={}", dojangCode);
         
         List<ClassMst> classes = classMstRepository
-                .findByDojangCodeOrderByCreatedAtDesc(dojangCode);
+                .findByDojangCodeOrderByClassCodeAsc(dojangCode);
         
         return classes.stream()
                 .map(cls -> ClassRespDto.builder()

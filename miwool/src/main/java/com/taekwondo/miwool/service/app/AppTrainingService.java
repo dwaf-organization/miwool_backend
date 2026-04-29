@@ -55,7 +55,7 @@ public class AppTrainingService {
         
         // ClassMst 직접 조회
         List<ClassMst> classes = classMstRepository
-                .findByDojangCodeOrderByCreatedAtDesc(dojangCode);
+                .findByDojangCodeOrderByClassCodeAsc(dojangCode);
         
         // 앱 DTO로 변환 (dayOfWeek 포함)
         return classes.stream()

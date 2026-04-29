@@ -17,4 +17,5 @@ public class StudentSelectionRespDto {
     private int age;                   // 나이 (한국나이)
     private String grade;              // 학년 (초1, 초2, 초3, ...)
     private String beltCode;           // 급수코드
+    private String beltName; // 급수명
 }

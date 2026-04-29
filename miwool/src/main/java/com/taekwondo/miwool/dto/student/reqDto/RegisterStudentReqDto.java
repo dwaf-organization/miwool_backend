@@ -22,6 +22,9 @@ public class RegisterStudentReqDto {
     
     private String studentNameEn;  // 영문이름
     
+    private String profileImage;             // 이미지 URL
+    
+    
     @NotNull(message = "입관일은 필수입니다")
     private LocalDate registDate;  // 입관일
     

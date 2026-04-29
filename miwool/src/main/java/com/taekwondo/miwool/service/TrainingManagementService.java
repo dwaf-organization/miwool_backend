@@ -67,12 +67,22 @@ public class TrainingManagementService {
         // 5. 수업 변경 (항상 체크)
         handleClassChange(reqDto, oldTraining);
         
-        // 6. 차량정보 변경 (항상 업데이트)
+        // 6. 차량정보 및 종료일 변경 (항상 업데이트)
         oldTraining.setUseVehicle(reqDto.getUseVehicle());
         oldTraining.setPickupLocation(reqDto.getPickupLocation());
         oldTraining.setDropoffLocation(reqDto.getDropoffLocation());
         oldTraining.setHandoverMethod(reqDto.getHandoverMethod());
+        
+        // 수련종료일 업데이트 (null이거나 값이 있음)
+        oldTraining.setEndDate(reqDto.getTrainingEndDate());
+        
         studentTrainingRepository.save(oldTraining);
+        
+        // 7. StudentTuition의 applyEndDate도 업데이트
+        if (reqDto.getTrainingEndDate() != null) {
+            oldTuition.setApplyEndDate(reqDto.getTrainingEndDate());
+            studentTuitionRepository.save(oldTuition);
+        }
         
         log.info("수련 수정 완료: trainingInfoCode={}", reqDto.getTrainingInfoCode());
     }
@@ -104,6 +114,7 @@ public class TrainingManagementService {
         oldTraining.setPickupLocation(reqDto.getPickupLocation());
         oldTraining.setDropoffLocation(reqDto.getDropoffLocation());
         oldTraining.setHandoverMethod(reqDto.getHandoverMethod());
+        oldTraining.setEndDate(reqDto.getTrainingEndDate());
         studentTrainingRepository.save(oldTraining);
         
         // 2. student_class 삭제 후 재생성
@@ -121,7 +132,7 @@ public class TrainingManagementService {
                     .classCode(classCode)
                     .trainingInfoCode(reqDto.getTrainingInfoCode())
                     .startDate(reqDto.getTrainingStartDate())
-                    .endDate(null)
+                    .endDate(reqDto.getTrainingEndDate())
                     .isCurrent(1)
                     .build();
             studentClassRepository.save(studentClass);
@@ -136,6 +147,7 @@ public class TrainingManagementService {
         tuition.setAdjustmentAmount(newAdjustmentAmount);
         tuition.setAdjustmentDetail(reqDto.getAdjustmentDetail());
         tuition.setActualPrice(newActualPrice);
+        tuition.setApplyEndDate(reqDto.getTrainingEndDate());
         studentTuitionRepository.save(tuition);
         
         // 4. monthly_billing 삭제 후 재생성 (해당 달만)
@@ -182,6 +194,7 @@ public class TrainingManagementService {
         
         // 1. student_training 수정
         oldTraining.setStartDate(newStartDate);
+        oldTraining.setEndDate(reqDto.getTrainingEndDate());
         studentTrainingRepository.save(oldTraining);
         
         // 2. student_class 수정
@@ -195,6 +208,7 @@ public class TrainingManagementService {
         tuition.setBillingCycleDay(newBillingCycleDay);
         tuition.setNextBillingDate(newNextBillingDate);
         tuition.setApplyStartDate(newStartDate);
+        tuition.setApplyEndDate(reqDto.getTrainingEndDate());
         studentTuitionRepository.save(tuition);
         
         // 4. monthly_billing 날짜만 수정 (삭제 안 함!)
@@ -252,7 +266,7 @@ public class TrainingManagementService {
                     .classCode(classCode)
                     .trainingInfoCode(reqDto.getTrainingInfoCode())
                     .startDate(oldTraining.getStartDate())  // 기존 시작일 유지
-                    .endDate(null)
+                    .endDate(reqDto.getTrainingEndDate())  // 수련종료일 설정
                     .isCurrent(1)
                     .build();
             studentClassRepository.save(studentClass);
