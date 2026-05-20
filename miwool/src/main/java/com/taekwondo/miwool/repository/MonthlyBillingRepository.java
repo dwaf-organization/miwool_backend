@@ -335,10 +335,92 @@ public interface MonthlyBillingRepository extends JpaRepository<MonthlyBilling, 
         WHERE s.dojang_code = :dojangCode
           AND mb.billing_month = :month
           AND (:paymentStatus = '전체' OR mb.billing_status = :paymentStatus)
-        ORDER BY s.student_name
+        ORDER BY mb.billing_date
         """, nativeQuery = true)
     List<Object[]> findBillingStudentList(
             @Param("dojangCode") String dojangCode,
             @Param("month") String month,
             @Param("paymentStatus") String paymentStatus);
+    
+    /**
+     * 특정 월의 총 매출 조회
+     */
+    @Query(value = """
+        SELECT SUM(billing_amount)
+        FROM monthly_billing
+        WHERE billing_month = :billingMonth AND billing_status = :billingStatus
+        """, nativeQuery = true)
+    Long sumPaymentAmountByBillingMonthAndBillingStatus(
+            @Param("billingMonth") String billingMonth,
+            @Param("billingStatus") String billingStatus);
+ 
+    /**
+     * 매출 TOP 5 도장 조회
+     */
+    @Query(value = """
+        SELECT d.dojang_name, SUM(mb.billing_amount) as revenue, d.dojang_code
+        FROM taekwondo_mst d
+        LEFT JOIN student_mst s ON d.dojang_code = s.dojang_code
+        LEFT JOIN monthly_billing mb ON s.student_code = mb.student_code
+        WHERE mb.billing_month = :billingMonth AND mb.billing_status = '납부완료'
+        GROUP BY d.dojang_code, d.dojang_name
+        ORDER BY revenue DESC
+        LIMIT 5
+        """, nativeQuery = true)
+    List<Object[]> findTop5RevenueByMonth(@Param("billingMonth") String billingMonth);
+ 
+    /**
+     * 특정 도장의 특정 월 매출 조회
+     */
+    @Query(value = """
+        SELECT SUM(mb.billing_amount)
+        FROM monthly_billing mb
+        JOIN student_mst s ON mb.student_code = s.student_code
+        WHERE s.dojang_code = :dojangCode 
+          AND mb.billing_month = :billingMonth 
+          AND mb.billing_status = :billingStatus
+        """, nativeQuery = true)
+    Long sumPaymentAmountByDojangCodeAndBillingMonthAndBillingStatus(
+            @Param("dojangCode") String dojangCode,
+            @Param("billingMonth") String billingMonth,
+            @Param("billingStatus") String billingStatus);
+
+    /**
+     * 특정 월의 총 매출 조회 (납부완료만)
+     */
+    @Query(value = """
+        SELECT COALESCE(SUM(mb.billing_amount), 0)
+        FROM monthly_billing mb
+        INNER JOIN student_mst sm ON mb.student_code = sm.student_code
+        WHERE sm.dojang_code = :dojangCode
+          AND mb.billing_month = :month
+          AND mb.billing_status = '납부완료'
+        """, nativeQuery = true)
+    Long sumRevenueByMonth(
+            @Param("dojangCode") String dojangCode,
+            @Param("month") String month);
+ 
+    /**
+     * 패키지별 제자수 및 매출 조회
+     */
+    @Query(value = """
+        SELECT 
+          p.package_name,
+          COUNT(DISTINCT sp.student_code) as student_count,
+          COALESCE(SUM(mb.billing_amount), 0) as revenue
+        FROM student_package sp
+        INNER JOIN package_mst p ON sp.package_code = p.package_code
+        INNER JOIN student_mst sm ON sp.student_code = sm.student_code
+        LEFT JOIN monthly_billing mb ON sp.student_code = mb.student_code 
+            AND mb.billing_month = :month
+        WHERE sm.dojang_code = :dojangCode
+          AND sm.is_deleted = 0
+          AND sp.is_deleted = 0
+        GROUP BY p.package_name
+        ORDER BY student_count DESC
+        """, nativeQuery = true)
+    List<Object[]> findPackageStats(
+            @Param("dojangCode") String dojangCode,
+            @Param("month") String month);
+    
 }

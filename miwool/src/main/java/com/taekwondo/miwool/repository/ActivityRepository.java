@@ -50,4 +50,25 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             Sort sort);
+    
+    // 월별 활동 목록 (참여인원 포함)
+    // (activity_name, activity_type, activity_date, participant_count)
+    @Query(value = 
+        "SELECT " +
+        "    a.activity_name, " +
+        "    a.activity_type, " +
+        "    a.activity_date, " +
+        "    COUNT(sa.student_code) AS participant_count " +
+        "FROM activity a " +
+        "LEFT JOIN student_activity sa ON a.activity_code = sa.activity_code " +
+        "WHERE a.dojang_code = :dojangCode " +
+        "AND DATE_FORMAT(a.activity_date, '%Y%m') = :month " +
+        "GROUP BY a.activity_code, a.activity_name, a.activity_type, a.activity_date " +
+        "ORDER BY a.activity_date",
+        nativeQuery = true)
+    List<Object[]> findActivitiesWithParticipantsByMonth(
+        @Param("dojangCode") String dojangCode,
+        @Param("month") String month);
+    
+    
 }

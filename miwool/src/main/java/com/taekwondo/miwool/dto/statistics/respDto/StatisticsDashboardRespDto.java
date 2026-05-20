@@ -28,6 +28,7 @@ public class StatisticsDashboardRespDto {
     @AllArgsConstructor
     public static class MonthlyStatusDto {
         private String month; // 월 (YYYYMM)
+        private Integer all; // 재원생수
         private Integer enrolled; // 입관 수
         private Integer trial; // 체험 수
         private Integer withdrawn; // 퇴관 수

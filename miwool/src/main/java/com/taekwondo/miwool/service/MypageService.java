@@ -85,6 +85,7 @@ public class MypageService {
         dojang.setDojangZipcode(reqDto.getDojangZipcode());
         dojang.setDojangAdd(reqDto.getDojangAdd());
         dojang.setDojangAdd2(reqDto.getDojangAdd2());
+        dojang.setDojangStatus(reqDto.getDojangStatus());
         dojang.setSelectedSchool(reqDto.getSelectedSchool());
         dojang.setSelectedSchool2(reqDto.getSelectedSchool2());
         dojang.setNote(reqDto.getNote());

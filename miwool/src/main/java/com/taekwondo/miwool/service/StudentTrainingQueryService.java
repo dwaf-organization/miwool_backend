@@ -142,6 +142,7 @@ public class StudentTrainingQueryService {
                 .adjustmentAmount(tuition.getAdjustmentAmount())
                 .adjustmentDetail(tuition.getAdjustmentDetail())
                 .trainingStartDate(training.getStartDate())
+                .trainingEndDate(training.getEndDate())
                 .build();
         
         log.info("수련정보 상세 조회 완료");

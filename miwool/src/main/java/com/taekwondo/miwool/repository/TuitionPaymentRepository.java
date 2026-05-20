@@ -73,5 +73,101 @@ public interface TuitionPaymentRepository extends JpaRepository<TuitionPayment, 
         @Param("dojangCode") String dojangCode,
         @Param("month") String month);
     
+    /**
+     * 해당 월 총 납부금액 (만원 단위)
+     */
+    @Query(value = 
+        "SELECT ROUND(SUM(tp.payment_amount) / 10000) " +
+        "FROM tuition_payment tp " +
+        "JOIN monthly_billing mb ON tp.billing_code = mb.billing_code " +
+        "WHERE DATE_FORMAT(tp.payment_date, '%Y-%m') = :month",
+        nativeQuery = true)
+    Integer getTotalRevenue(@Param("month") String month);
+    
+    /**
+     * 최근 12개월 매출 추이 (만원 단위)
+     * (month, revenue)
+     */
+    @Query(value = 
+        "SELECT " +
+        "    DATE_FORMAT(tp.payment_date, '%Y-%m') AS month, " +
+        "    ROUND(SUM(tp.payment_amount) / 10000) AS revenue " +
+        "FROM tuition_payment tp " +
+        "WHERE DATE_FORMAT(tp.payment_date, '%Y-%m') >= " +
+        "    DATE_FORMAT(DATE_SUB(STR_TO_DATE(CONCAT(:month, '-01'), '%Y-%m-%d'), INTERVAL 11 MONTH), '%Y-%m') " +
+        "AND DATE_FORMAT(tp.payment_date, '%Y-%m') <= :month " +
+        "GROUP BY DATE_FORMAT(tp.payment_date, '%Y-%m') " +
+        "ORDER BY month",
+        nativeQuery = true)
+    List<Object[]> getMonthlyRevenueTrend(@Param("month") String month);
+    
+    /**
+     * 도장별 매출 현황 (상위 10개, 만원 단위)
+     * (dojang_code, dojang_name, student_count, revenue, avg_fee)
+     */
+    @Query(value = 
+        "SELECT " +
+        "    d.dojang_code, " +
+        "    d.dojang_name, " +
+        "    COUNT(DISTINCT s.student_code) AS student_count, " +
+        "    ROUND(SUM(tp.payment_amount) / 10000) AS revenue, " +
+        "    ROUND(AVG(tp.payment_amount)) AS avg_fee " +
+        "FROM tuition_payment tp " +
+        "JOIN monthly_billing mb ON tp.billing_code = mb.billing_code " +
+        "JOIN student_mst s ON mb.student_code = s.student_code " +
+        "JOIN taekwondo_mst d ON s.dojang_code = d.dojang_code " +
+        "WHERE DATE_FORMAT(tp.payment_date, '%Y-%m') = :month " +
+        "GROUP BY d.dojang_code, d.dojang_name " +
+        "ORDER BY revenue DESC " +
+        "LIMIT 10",
+        nativeQuery = true)
+    List<Object[]> getTopDojangsByRevenue(@Param("month") String month);
+    
+    /**
+     * 도장별 평균 교육비 (최고/최저 찾기용)
+     * (dojang_name, avg_fee)
+     */
+    @Query(value = 
+        "SELECT " +
+        "    d.dojang_name, " +
+        "    ROUND(AVG(tp.payment_amount)) AS avg_fee " +
+        "FROM tuition_payment tp " +
+        "JOIN monthly_billing mb ON tp.billing_code = mb.billing_code " +
+        "JOIN student_mst s ON mb.student_code = s.student_code " +
+        "JOIN taekwondo_mst d ON s.dojang_code = d.dojang_code " +
+        "WHERE DATE_FORMAT(tp.payment_date, '%Y-%m') = :month " +
+        "GROUP BY d.dojang_code, d.dojang_name " +
+        "ORDER BY avg_fee DESC",
+        nativeQuery = true)
+    List<Object[]> getDojangAverageFees(@Param("month") String month);
+    
+    /**
+     * 주 횟수별 평균 교육비
+     * (weekly_count, avg_fee)
+     */
+    @Query(value = 
+        "SELECT " +
+        "    t.weekly_count, " +
+        "    ROUND(AVG(tp.payment_amount)) AS avg_fee " +
+        "FROM tuition_payment tp " +
+        "JOIN monthly_billing mb ON tp.billing_code = mb.billing_code " +
+        "JOIN student_training st ON mb.training_info_code = st.training_info_code " +
+        "JOIN training_mst t ON st.package_code = t.package_code " +
+        "WHERE DATE_FORMAT(tp.payment_date, '%Y-%m') = :month " +
+        "GROUP BY t.weekly_count " +
+        "ORDER BY t.weekly_count",
+        nativeQuery = true)
+    List<Object[]> getAverageFeeByWeeklyCount(@Param("month") String month);
+    
+    /**
+     * 전체 평균 교육비
+     */
+    @Query(value = 
+        "SELECT ROUND(AVG(tp.payment_amount)) " +
+        "FROM tuition_payment tp " +
+        "WHERE DATE_FORMAT(tp.payment_date, '%Y-%m') = :month",
+        nativeQuery = true)
+    Integer getOverallAverageFee(@Param("month") String month);
+    
     
 }

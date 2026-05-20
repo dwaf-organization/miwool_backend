@@ -45,7 +45,7 @@ public class DashboardService {
         // 1. 월 요약 데이터 조회
         int totalEnrollment = studentRepository.countMonthlyEnrollment(dojangCode, month);
         int totalWithdrawal = studentRepository.countMonthlyWithdrawal(dojangCode, month);
-        int currentTotal = studentRepository.countCurrentTotal(dojangCode);
+        int currentTotal = studentRepository.countCurrentTotal(dojangCode, month);
 
         SummaryDto summary = SummaryDto.builder()
                 .totalEnrollment(totalEnrollment)
@@ -116,7 +116,7 @@ public class DashboardService {
         // 1. 월 요약 데이터 조회 (달력과 동일)
         int totalEnrollment = studentRepository.countMonthlyEnrollment(dojangCode, month);
         int totalWithdrawal = studentRepository.countMonthlyWithdrawal(dojangCode, month);
-        int currentTotal = studentRepository.countCurrentTotal(dojangCode);
+        int currentTotal = studentRepository.countCurrentTotal(dojangCode, month);
  
         DailyRespDto.SummaryDto summary = DailyRespDto.SummaryDto.builder()
                 .totalEnrollment(totalEnrollment)
@@ -188,7 +188,7 @@ public class DashboardService {
         // 1. 월 요약 데이터 조회 (달력/일일과 동일)
         int totalEnrollment = studentRepository.countMonthlyEnrollment(dojangCode, month);
         int totalWithdrawal = studentRepository.countMonthlyWithdrawal(dojangCode, month);
-        int currentTotal = studentRepository.countCurrentTotal(dojangCode);
+        int currentTotal = studentRepository.countCurrentTotal(dojangCode, month);
 
         WeeklyRespDto.SummaryDto summary = WeeklyRespDto.SummaryDto.builder()
                 .totalEnrollment(totalEnrollment)
@@ -268,7 +268,7 @@ public class DashboardService {
         // 2. 월 요약 데이터 조회 (동일)
         int totalEnrollment = studentRepository.countMonthlyEnrollment(dojangCode, month);
         int totalWithdrawal = studentRepository.countMonthlyWithdrawal(dojangCode, month);
-        int currentTotal = studentRepository.countCurrentTotal(dojangCode);
+        int currentTotal = studentRepository.countCurrentTotal(dojangCode, month);
 
         SummaryTabRespDto.SummaryDto summary = SummaryTabRespDto.SummaryDto.builder()
                 .totalEnrollment(totalEnrollment)

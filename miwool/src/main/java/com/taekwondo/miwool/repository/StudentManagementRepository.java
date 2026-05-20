@@ -32,6 +32,7 @@ public interface StudentManagementRepository extends JpaRepository<StudentManage
                    "  MAX(CASE WHEN sm.management_type_code = '손편지' THEN 1 ELSE 0 END) as letter_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '간식' THEN 1 ELSE 0 END) as snack_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '영상' THEN 1 ELSE 0 END) as video_yn, " +
+                   "  MAX(CASE WHEN sm.management_type_code = '상장' THEN 1 ELSE 0 END) as award_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '관찰지' THEN 1 ELSE 0 END) as observation_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '기타' THEN 1 ELSE 0 END) as etc_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '기타' THEN sm.note ELSE NULL END) as etc_content " +
@@ -145,5 +146,120 @@ public interface StudentManagementRepository extends JpaRepository<StudentManage
         @Param("dojangCode") String dojangCode,
         @Param("month") String month,
         @Param("guideType") String guideType);
+    
+    /**
+     * 도장별, 교육 유형별 실행 건수 조회 (특정 월)
+     */
+    @Query(value = """
+        SELECT 
+          s.dojang_code,
+          d.dojang_name,
+          sm.management_type_code,
+          COUNT(DISTINCT sm.student_code) as execution_count
+        FROM student_management sm
+        JOIN student_mst s ON sm.student_code = s.student_code
+        JOIN taekwondo_mst d ON s.dojang_code = d.dojang_code
+        WHERE YEAR(sm.executed_date) = :year 
+          AND MONTH(sm.executed_date) = :month
+          AND sm.management_type_code IN ('전화', '문자', '손편지', '간식', '상장', '영상', '관찰지')
+        GROUP BY s.dojang_code, d.dojang_name, sm.management_type_code
+        """, nativeQuery = true)
+    List<Object[]> countExecutionsByDojangAndType(
+            @Param("year") int year,
+            @Param("month") int month);
+    
+    // 교육관리 항목별 진행률 (management_type_code, progress_rate)
+    @Query(value = 
+        "SELECT sm.management_type_code, " +
+        "COUNT(DISTINCT sm.student_code) * 100.0 / ( " +
+        "    SELECT COUNT(*) FROM student_mst s " +
+        "    WHERE s.dojang_code = :dojangCode AND s.status_code = '재원' " +
+        ") AS progress_rate " +
+        "FROM student_management sm " +
+        "JOIN student_mst s ON sm.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND DATE_FORMAT(sm.executed_date, '%Y%m') = :month " +
+        "GROUP BY sm.management_type_code " +
+        "ORDER BY sm.management_type_code",
+        nativeQuery = true)
+    List<Object[]> calculateGuidanceProgressByItem(
+        @Param("dojangCode") String dojangCode,
+        @Param("month") String month);
+    
+    /**
+     * 해당 월 항목별 실행 학생 수
+     * (management_type_code, executed_students)
+     */
+    @Query(value = 
+        "SELECT " +
+        "    management_type_code, " +
+        "    COUNT(DISTINCT student_code) AS executed_students " +
+        "FROM student_management " +
+        "WHERE DATE_FORMAT(executed_date, '%Y-%m') = :month " +
+        "GROUP BY management_type_code",
+        nativeQuery = true)
+    List<Object[]> getItemExecutionByMonth(@Param("month") String month);
+    
+    /**
+     * 최근 3개월 항목별 실행 학생 수
+     * (month, management_type_code, executed_students)
+     */
+    @Query(value = 
+        "SELECT " +
+        "    DATE_FORMAT(executed_date, '%Y-%m') AS month, " +
+        "    management_type_code, " +
+        "    COUNT(DISTINCT student_code) AS executed_students " +
+        "FROM student_management " +
+        "WHERE DATE_FORMAT(executed_date, '%Y-%m') >= " +
+        "    DATE_FORMAT(DATE_SUB(STR_TO_DATE(CONCAT(:month, '-01'), '%Y-%m-%d'), INTERVAL 2 MONTH), '%Y-%m') " +
+        "AND DATE_FORMAT(executed_date, '%Y-%m') <= :month " +
+        "GROUP BY DATE_FORMAT(executed_date, '%Y-%m'), management_type_code " +
+        "ORDER BY month, management_type_code",
+        nativeQuery = true)
+    List<Object[]> getMonthlyItemExecutionTrend(@Param("month") String month);
+    
+    /**
+     * 도장별 항목별 실행 학생 수
+     * (dojang_code, dojang_name, total_students, management_type_code, executed_students)
+     */
+    @Query(value = 
+        "SELECT " +
+        "    d.dojang_code, " +
+        "    d.dojang_name, " +
+        "    (SELECT COUNT(*) FROM student_mst s2 " +
+        "     WHERE s2.dojang_code = d.dojang_code AND s2.status_code = '재원') AS total_students, " +
+        "    sm.management_type_code, " +
+        "    COUNT(DISTINCT sm.student_code) AS executed_students " +
+        "FROM taekwondo_mst d " +
+        "LEFT JOIN student_mst s ON d.dojang_code = s.dojang_code " +
+        "LEFT JOIN student_management sm ON s.student_code = sm.student_code " +
+        "    AND DATE_FORMAT(sm.executed_date, '%Y-%m') = :month " +
+        "WHERE d.is_deleted = 0 " +
+        "GROUP BY d.dojang_code, d.dojang_name, sm.management_type_code",
+        nativeQuery = true)
+    List<Object[]> getDojangItemExecution(@Param("month") String month);
+    
+    /**
+     * 항목별 도장 실행률 (최저 찾기용)
+     * (management_type_code, dojang_code, dojang_name, total_students, executed_students)
+     */
+    @Query(value = 
+        "SELECT " +
+        "    sm.management_type_code, " +
+        "    d.dojang_code, " +
+        "    d.dojang_name, " +
+        "    (SELECT COUNT(*) FROM student_mst s2 " +
+        "     WHERE s2.dojang_code = d.dojang_code AND s2.status_code = '재원') AS total_students, " +
+        "    COUNT(DISTINCT sm.student_code) AS executed_students " +
+        "FROM student_management sm " +
+        "JOIN student_mst s ON sm.student_code = s.student_code " +
+        "JOIN taekwondo_mst d ON s.dojang_code = d.dojang_code " +
+        "WHERE DATE_FORMAT(sm.executed_date, '%Y-%m') = :month " +
+        "AND d.is_deleted = 0 " +
+        "GROUP BY sm.management_type_code, d.dojang_code, d.dojang_name " +
+        "ORDER BY sm.management_type_code, executed_students",
+        nativeQuery = true)
+    List<Object[]> getItemDojangExecutionRates(@Param("month") String month);
+    
     
 }

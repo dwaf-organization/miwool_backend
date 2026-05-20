@@ -50,7 +50,8 @@ public class SecurityConfig {
                         // 모바일 앱 API - dojangCode 파라미터 방식 (컨트롤러에서 검증)
                         .requestMatchers("/api/v1/app/**").permitAll()
                         
-                        // 관리자 API - adminCode 파라미터 방식 (컨트롤러에서 검증)
+                        // 관리자 페이지 및 API - 인증 없이 접근 가능
+                        .requestMatchers("/admin/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").permitAll()
                         
                         // 나머지는 JWT 인증 필요
@@ -82,6 +83,8 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://localhost:8080",
+                "https://www.miwool.com",
+                "https://miwool.com",
                 "http://172.30.1.4:8080"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

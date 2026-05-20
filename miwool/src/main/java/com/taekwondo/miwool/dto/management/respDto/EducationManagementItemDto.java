@@ -23,6 +23,7 @@ public class EducationManagementItemDto {
     private boolean letterYn;          // 손편지
     private boolean snackYn;           // 간식
     private boolean videoYn;           // 영상
+    private boolean awardYn;           // 상장
     private boolean observationYn;     // 관찰지
     private boolean etcYn;             // 기타
     private String etcContent;         // 기타내용 (note)

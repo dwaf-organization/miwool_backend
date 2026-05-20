@@ -35,6 +35,7 @@ public class UpdateDojangInfoReqDto {
     private String dojangZipcode;        // 도장우편번호
     private String dojangAdd;            // 도장주소
     private String dojangAdd2;           // 도장상세주소
+    private String dojangStatus;		 //	도장운영상태
     
     private String selectedSchool;       // 지정학교1
     private String selectedSchool2;      // 지정학교2

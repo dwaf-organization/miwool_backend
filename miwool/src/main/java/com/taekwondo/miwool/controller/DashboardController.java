@@ -30,7 +30,7 @@ public class DashboardController {
         try {            
             CalendarRespDto respDto = dashboardService.getCalendarData(dojangCode, month);
             
-            return ResponseEntity
+            return ResponseEntity 
                     .ok()
                     .body(RespDto.success("달력 데이터를 조회했습니다.", respDto));
             

@@ -24,5 +24,5 @@ public class StudentListRespDto {
     private LocalDate birthDate;   // 생년월일
     private String statusCode;     // 최신 재원상태 코드
     private LocalDate registDate;  // 입관일
-    private LocalDate exitDate;    // 퇴관일 (퇴관시만)
+    private LocalDate withdrawalDate;    // 퇴관일 (퇴관시만)
 }

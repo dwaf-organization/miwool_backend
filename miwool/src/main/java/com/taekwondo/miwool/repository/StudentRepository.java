@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -146,11 +147,24 @@ public interface StudentRepository extends JpaRepository<Student, String> {
 
     /**
      * 대시보드 - 월별 입관생 수
+     * student_status에서 입관일 당일 '재원' 이력 확인
+     * 같은 날짜에 재원/체험 여러 번 변경 시 가장 최신 상태만 카운트 (퇴관은 별도)
      */
     @Query(value = 
-        "SELECT COUNT(*) FROM student_mst " +
-        "WHERE dojang_code = :dojangCode " +
-        "AND DATE_FORMAT(regist_date, '%Y%m') = :month",
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND DATE_FORMAT(s.regist_date, '%Y%m') = :month " +
+        "AND ss.status_code = '재원' " +
+        "AND DATE(ss.change_date) = DATE(s.regist_date) " +
+        "AND ss.created_at = ( " +
+        "    SELECT MAX(created_at) " +
+        "    FROM student_status " +
+        "    WHERE student_code = s.student_code " +
+        "    AND DATE(change_date) = DATE(s.regist_date) " +
+        "    AND status_code IN ('재원', '체험') " +
+        ")",
         nativeQuery = true)
     int countMonthlyEnrollment(
         @Param("dojangCode") String dojangCode,
@@ -158,12 +172,15 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     
     /**
      * 대시보드 - 월별 퇴관생 수
+     * student_status 테이블에서 퇴관 이력 조회
      */
     @Query(value = 
-        "SELECT COUNT(*) FROM student_mst " +
-        "WHERE dojang_code = :dojangCode " +
-        "AND status_code = '퇴관' " +
-        "AND DATE_FORMAT(deleted_at, '%Y%m') = :month",
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.status_code = '퇴관' " +
+        "AND DATE_FORMAT(ss.change_date, '%Y%m') = :month",
         nativeQuery = true)
     int countMonthlyWithdrawal(
         @Param("dojangCode") String dojangCode,
@@ -177,10 +194,31 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         "WHERE dojang_code = :dojangCode " +
         "AND status_code IN ('재원', '체험')",
         nativeQuery = true)
-    int countCurrentTotal(@Param("dojangCode") String dojangCode);
+    int countStatisticCurrentTotal(@Param("dojangCode") String dojangCode);
+    
+    /**
+     * 대시보드 - 해당 월 말일 기준 총원 (재원 + 체험)
+     * 해당 월까지 입관한 학생 중 해당 월까지 퇴관하지 않은 학생
+     */
+    @Query(value = 
+        "SELECT COUNT(*) FROM student_mst s " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND DATE_FORMAT(s.regist_date, '%Y%m') <= :month " +
+        "AND NOT EXISTS ( " +
+        "    SELECT 1 FROM student_status ss " +
+        "    WHERE ss.student_code = s.student_code " +
+        "    AND ss.status_code = '퇴관' " +
+        "    AND DATE_FORMAT(ss.change_date, '%Y%m') <= :month " +
+        ")",
+        nativeQuery = true)
+    int countCurrentTotal(
+        @Param("dojangCode") String dojangCode,
+        @Param("month") String month);
     
     /**
      * 대시보드 - 일별 입관/퇴관/체험 수 조회
+     * student_status에서 입관일/퇴관일 기준 집계
+     * 같은 날짜에 재원/체험 여러 번 변경 시 가장 최신 상태만 카운트 (퇴관은 별도)
      * 결과: [날짜, 입관수, 퇴관수, 체험수]
      */
     @Query(value = 
@@ -190,51 +228,92 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         "    COALESCE(withdraw.cnt, 0) AS withdrawal, " +
         "    COALESCE(trial.cnt, 0) AS trial " +
         "FROM ( " +
-        "    SELECT DATE(regist_date) AS date FROM student_mst " +
-        "    WHERE dojang_code = :dojangCode AND DATE_FORMAT(regist_date, '%Y%m') = :month " +
+        "    SELECT DISTINCT DATE(s.regist_date) AS date " +
+        "    FROM student_mst s " +
+        "    WHERE s.dojang_code = :dojangCode " +
+        "    AND DATE_FORMAT(s.regist_date, '%Y%m') = :month " +
         "    UNION " +
-        "    SELECT DATE(deleted_at) AS date FROM student_mst " +
-        "    WHERE dojang_code = :dojangCode AND status_code = '퇴관' AND DATE_FORMAT(deleted_at, '%Y%m') = :month " +
+        "    SELECT DISTINCT DATE(ss.change_date) AS date " +
+        "    FROM student_status ss " +
+        "    JOIN student_mst s ON ss.student_code = s.student_code " +
+        "    WHERE s.dojang_code = :dojangCode " +
+        "    AND ss.status_code = '퇴관' " +
+        "    AND DATE_FORMAT(ss.change_date, '%Y%m') = :month " +
         ") dates " +
         "LEFT JOIN ( " +
-        "    SELECT DATE(regist_date) AS date, COUNT(*) AS cnt " +
-        "    FROM student_mst " +
-        "    WHERE dojang_code = :dojangCode AND status_code = '재원' AND DATE_FORMAT(regist_date, '%Y%m') = :month " +
-        "    GROUP BY DATE(regist_date) " +
+        "    SELECT DATE(s.regist_date) AS date, COUNT(DISTINCT ss.student_code) AS cnt " +
+        "    FROM student_status ss " +
+        "    JOIN student_mst s ON ss.student_code = s.student_code " +
+        "    WHERE s.dojang_code = :dojangCode " +
+        "    AND ss.status_code = '재원' " +
+        "    AND DATE(ss.change_date) = DATE(s.regist_date) " +
+        "    AND DATE_FORMAT(s.regist_date, '%Y%m') = :month " +
+        "    AND ss.created_at = ( " +
+        "        SELECT MAX(created_at) " +
+        "        FROM student_status " +
+        "        WHERE student_code = s.student_code " +
+        "        AND DATE(change_date) = DATE(s.regist_date) " +
+        "        AND status_code IN ('재원', '체험') " +
+        "    ) " +
+        "    GROUP BY DATE(s.regist_date) " +
         ") enroll ON dates.date = enroll.date " +
         "LEFT JOIN ( " +
-        "    SELECT DATE(deleted_at) AS date, COUNT(*) AS cnt " +
-        "    FROM student_mst " +
-        "    WHERE dojang_code = :dojangCode AND status_code = '퇴관' AND DATE_FORMAT(deleted_at, '%Y%m') = :month " +
-        "    GROUP BY DATE(deleted_at) " +
+        "    SELECT DATE(ss.change_date) AS date, COUNT(DISTINCT ss.student_code) AS cnt " +
+        "    FROM student_status ss " +
+        "    JOIN student_mst s ON ss.student_code = s.student_code " +
+        "    WHERE s.dojang_code = :dojangCode " +
+        "    AND ss.status_code = '퇴관' " +
+        "    AND DATE_FORMAT(ss.change_date, '%Y%m') = :month " +
+        "    GROUP BY DATE(ss.change_date) " +
         ") withdraw ON dates.date = withdraw.date " +
         "LEFT JOIN ( " +
-        "    SELECT DATE(regist_date) AS date, COUNT(*) AS cnt " +
-        "    FROM student_mst " +
-        "    WHERE dojang_code = :dojangCode AND status_code = '체험' AND DATE_FORMAT(regist_date, '%Y%m') = :month " +
-        "    GROUP BY DATE(regist_date) " +
+        "    SELECT DATE(s.regist_date) AS date, COUNT(DISTINCT ss.student_code) AS cnt " +
+        "    FROM student_status ss " +
+        "    JOIN student_mst s ON ss.student_code = s.student_code " +
+        "    WHERE s.dojang_code = :dojangCode " +
+        "    AND ss.status_code = '체험' " +
+        "    AND DATE(ss.change_date) = DATE(s.regist_date) " +
+        "    AND DATE_FORMAT(s.regist_date, '%Y%m') = :month " +
+        "    AND ss.created_at = ( " +
+        "        SELECT MAX(created_at) " +
+        "        FROM student_status " +
+        "        WHERE student_code = s.student_code " +
+        "        AND DATE(change_date) = DATE(s.regist_date) " +
+        "        AND status_code IN ('재원', '체험') " +
+        "    ) " +
+        "    GROUP BY DATE(s.regist_date) " +
         ") trial ON dates.date = trial.date " +
-        "ORDER BY dates.date ASC",
+        "ORDER BY dates.date",
         nativeQuery = true)
     List<Object[]> getDailyStudentStats(
         @Param("dojangCode") String dojangCode,
         @Param("month") String month);
-
+ 
     /**
-     * 대시보드 - 주차별 신규 입관 수
-     * 일요일 시작 기준, status_code = '재원'
-     * 결과: [주_시작일, 입관수]
+     * 대시보드 - 주간별 신규 입관 수 (주 시작일 기준)
+     * student_status에서 입관일 당일 '재원' 이력 확인
+     * 같은 날짜에 재원/체험 여러 번 변경 시 가장 최신 상태만 카운트 (퇴관은 별도)
+     * 결과: [주 시작일, 입관수]
      */
     @Query(value = 
         "SELECT " +
-        "    DATE_SUB(regist_date, INTERVAL (DAYOFWEEK(regist_date) - 1) DAY) AS week_start, " +
-        "    COUNT(*) AS enrollment_count " +
-        "FROM student_mst " +
-        "WHERE dojang_code = :dojangCode " +
-        "AND status_code = '재원' " +
-        "AND DATE_FORMAT(regist_date, '%Y%m') = :month " +
+        "    DATE_SUB(DATE(s.regist_date), INTERVAL WEEKDAY(s.regist_date) DAY) AS week_start, " +
+        "    COUNT(DISTINCT ss.student_code) AS cnt " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.status_code = '재원' " +
+        "AND DATE(ss.change_date) = DATE(s.regist_date) " +
+        "AND DATE_FORMAT(s.regist_date, '%Y%m') = :month " +
+        "AND ss.created_at = ( " +
+        "    SELECT MAX(created_at) " +
+        "    FROM student_status " +
+        "    WHERE student_code = s.student_code " +
+        "    AND DATE(change_date) = DATE(s.regist_date) " +
+        "    AND status_code IN ('재원', '체험') " +
+        ") " +
         "GROUP BY week_start " +
-        "ORDER BY week_start ASC",
+        "ORDER BY week_start",
         nativeQuery = true)
     List<Object[]> getWeeklyEnrollment(
         @Param("dojangCode") String dojangCode,
@@ -242,38 +321,96 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     
     /**
      * 대시보드 - 월별 체험생 수
+     * student_status에서 입관일 당일 '체험' 이력 확인
+     * 같은 날짜에 재원/체험 여러 번 변경 시 가장 최신 상태만 카운트 (퇴관은 별도)
      */
     @Query(value = 
-        "SELECT COUNT(*) FROM student_mst " +
-        "WHERE dojang_code = :dojangCode " +
-        "AND status_code = '체험' " +
-        "AND DATE_FORMAT(regist_date, '%Y%m') = :month",
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.status_code = '체험' " +
+        "AND DATE(ss.change_date) = DATE(s.regist_date) " +
+        "AND DATE_FORMAT(s.regist_date, '%Y%m') = :month " +
+        "AND ss.created_at = ( " +
+        "    SELECT MAX(created_at) " +
+        "    FROM student_status " +
+        "    WHERE student_code = s.student_code " +
+        "    AND DATE(change_date) = DATE(s.regist_date) " +
+        "    AND status_code IN ('재원', '체험') " +
+        ")",
         nativeQuery = true)
     int countMonthlyTrial(
         @Param("dojangCode") String dojangCode,
         @Param("month") String month);
     
     /**
-     * 통계 - 월별 입관생 수 (재원)
+     * 통계 - 월별 전체 제자 수 (재원 + 체험)
+     * 해당 월 말일 기준 재원생 수
+     * 해당 월까지 입관한 학생 중 해당 월까지 퇴관하지 않은 학생
      */
     @Query(value = 
-        "SELECT COUNT(*) FROM student_mst " +
-        "WHERE dojang_code = :dojangCode " +
-        "AND status_code = '재원' " +
-        "AND DATE_FORMAT(regist_date, '%Y%m') = :month",
+        "SELECT COUNT(*) FROM student_mst s " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND DATE_FORMAT(s.regist_date, '%Y%m') <= :month " +
+        "AND NOT EXISTS ( " +
+        "    SELECT 1 FROM student_status ss " +
+        "    WHERE ss.student_code = s.student_code " +
+        "    AND ss.status_code = '퇴관' " +
+        "    AND DATE_FORMAT(ss.change_date, '%Y%m') <= :month " +
+        ")",
+        nativeQuery = true)
+    int countMonthlyStudentsByMonth(
+        @Param("dojangCode") String dojangCode,
+        @Param("month") String month);
+    
+    /**
+     * 통계 - 월별 신규 입관생 수 (재원)
+     * 해당 월에 입관한 학생 중 입관 시 상태가 '재원'인 학생
+     * student_status 테이블에서 입관일과 동일한 날짜의 '재원' 이력 확인
+     * 같은 날짜에 재원/체험 여러 번 변경 시 가장 최신 상태만 카운트 (퇴관은 별도)
+     */
+    @Query(value = 
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND DATE_FORMAT(s.regist_date, '%Y%m') = :month " +
+        "AND ss.status_code = '재원' " +
+        "AND DATE(ss.change_date) = DATE(s.regist_date) " +
+        "AND ss.created_at = ( " +
+        "    SELECT MAX(created_at) " +
+        "    FROM student_status " +
+        "    WHERE student_code = s.student_code " +
+        "    AND DATE(change_date) = DATE(s.regist_date) " +
+        "    AND status_code IN ('재원', '체험') " +
+        ")",
         nativeQuery = true)
     int countMonthlyEnrolledByMonth(
         @Param("dojangCode") String dojangCode,
         @Param("month") String month);
     
     /**
-     * 통계 - 월별 체험생 수
+     * 통계 - 월별 신규 체험생 수
+     * 해당 월에 입관한 학생 중 입관 시 상태가 '체험'인 학생
+     * student_status 테이블에서 입관일과 동일한 날짜의 '체험' 이력 확인
+     * 같은 날짜에 재원/체험 여러 번 변경 시 가장 최신 상태만 카운트 (퇴관은 별도)
      */
     @Query(value = 
-        "SELECT COUNT(*) FROM student_mst " +
-        "WHERE dojang_code = :dojangCode " +
-        "AND status_code = '체험' " +
-        "AND DATE_FORMAT(regist_date, '%Y%m') = :month",
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND DATE_FORMAT(s.regist_date, '%Y%m') = :month " +
+        "AND ss.status_code = '체험' " +
+        "AND DATE(ss.change_date) = DATE(s.regist_date) " +
+        "AND ss.created_at = ( " +
+        "    SELECT MAX(created_at) " +
+        "    FROM student_status " +
+        "    WHERE student_code = s.student_code " +
+        "    AND DATE(change_date) = DATE(s.regist_date) " +
+        "    AND status_code IN ('재원', '체험') " +
+        ")",
         nativeQuery = true)
     int countMonthlyTrialByMonth(
         @Param("dojangCode") String dojangCode,
@@ -281,12 +418,15 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     
     /**
      * 통계 - 월별 퇴관생 수
+     * 해당 월에 퇴관한 학생 수
      */
     @Query(value = 
-        "SELECT COUNT(*) FROM student_mst " +
-        "WHERE dojang_code = :dojangCode " +
-        "AND status_code = '퇴관' " +
-        "AND DATE_FORMAT(deleted_at, '%Y%m') = :month",
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.status_code = '퇴관' " +
+        "AND DATE_FORMAT(ss.change_date, '%Y%m') = :month",
         nativeQuery = true)
     int countMonthlyWithdrawnByMonth(
         @Param("dojangCode") String dojangCode,
@@ -301,6 +441,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         "FROM student_mst " +
         "WHERE dojang_code = :dojangCode " +
         "AND status_code = '재원' " +
+        "AND is_deleted = 0 " +
         "GROUP BY gender_code " +
         "ORDER BY gender_code",
         nativeQuery = true)
@@ -396,5 +537,123 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         @Param("statusCode") String statusCode,
         Pageable pageable);
 
+    /**
+     * 재원 + 체험 제자 수 조회
+     */
+    @Query(value = """
+        SELECT COUNT(*) 
+        FROM student_mst 
+        WHERE status_code IN (:statuses) AND is_deleted = :isDeleted
+        """, nativeQuery = true)
+    long countByStudentStatusInAndIsDeleted(
+            @Param("statuses") List<String> statuses, 
+            @Param("isDeleted") Integer isDeleted);
+ 
+    /**
+     * 도장별 재원 제자 수 조회
+     */
+    @Query(value = """
+        SELECT s.dojang_code, COUNT(*) as cnt
+        FROM student_mst s
+        WHERE s.status_code = '재원' AND s.is_deleted = 0
+        GROUP BY s.dojang_code
+        """, nativeQuery = true)
+    List<Object[]> countEnrolledByDojang();
+ 
+    /**
+     * 제자수 TOP 5 도장 조회
+     */
+    @Query(value = """
+        SELECT d.dojang_name, COUNT(s.student_code) as student_count
+        FROM taekwondo_mst d
+        LEFT JOIN student_mst s ON d.dojang_code = s.dojang_code
+        WHERE s.status_code IN ('재원', '체험') AND s.is_deleted = 0
+        GROUP BY d.dojang_code, d.dojang_name
+        ORDER BY student_count DESC
+        LIMIT 5
+        """, nativeQuery = true)
+    List<Object[]> findTop5ByStudentCount();
+ 
+    /**
+     * 재원현황 TOP 5 조회
+     */
+    @Query(value = """
+        SELECT 
+          d.dojang_name,
+          SUM(CASE WHEN s.status_code = '재원' THEN 1 ELSE 0 END) as enrolled,
+          SUM(CASE WHEN s.status_code = '퇴관' THEN 1 ELSE 0 END) as withdrawn,
+          SUM(CASE WHEN s.status_code = '체험' THEN 1 ELSE 0 END) as trial
+        FROM taekwondo_mst d
+        LEFT JOIN student_mst s ON d.dojang_code = s.dojang_code
+        WHERE s.is_deleted = 0
+        GROUP BY d.dojang_code, d.dojang_name
+        ORDER BY enrolled DESC
+        LIMIT 5
+        """, nativeQuery = true)
+    List<Object[]> findTop5ByEnrollmentStatus();
+ 
+    /**
+     * 특정 도장의 특정 상태별 제자 수 조회
+     */
+    @Query(value = """
+        SELECT COUNT(*) 
+        FROM student_mst 
+        WHERE dojang_code = :dojangCode 
+          AND status_code = :studentStatus 
+          AND is_deleted = :isDeleted
+        """, nativeQuery = true)
+    long countByDojangCodeAndStudentStatusAndIsDeleted(
+            @Param("dojangCode") String dojangCode, 
+            @Param("studentStatus") String studentStatus, 
+            @Param("isDeleted") Integer isDeleted);
+ 
+    /**
+     * 특정 도장의 제자 수 조회 (여러 상태)
+     */
+    @Query(value = """
+        SELECT COUNT(*) 
+        FROM student_mst 
+        WHERE dojang_code = :dojangCode 
+          AND status_code IN (:statuses) 
+          AND is_deleted = :isDeleted
+        """, nativeQuery = true)
+    long countByDojangCodeAndStudentStatusInAndIsDeleted(
+            @Param("dojangCode") String dojangCode, 
+            @Param("statuses") List<String> statuses, 
+            @Param("isDeleted") Integer isDeleted);
+ 
+    /**
+     * 학년별 제자수 조회를 위한 생년월일 목록
+     */
+    @Query(value = """
+        SELECT s.birth_date
+        FROM student_mst s
+        WHERE s.dojang_code = :dojangCode
+          AND s.status_code = '재원'
+          AND s.is_deleted = 0
+        """, nativeQuery = true)
+    List<Object> findBirthDatesByDojang(@Param("dojangCode") String dojangCode);
+    
+    /**
+     * 도장 + 상태코드로 제자 수 카운트
+     */
+    @Query(value = 
+        "SELECT COUNT(*) FROM student_mst " +
+        "WHERE dojang_code = :dojangCode " +
+        "AND status_code = :statusCode",
+        nativeQuery = true)
+    int countByDojangCodeAndStatusCode(
+        @Param("dojangCode") String dojangCode,
+        @Param("statusCode") String statusCode);
+    
+    /**
+     * 상태코드로 제자 수 카운트
+     */
+    @Query(value = 
+        "SELECT COUNT(*) FROM student_mst " +
+        "WHERE status_code = :statusCode",
+        nativeQuery = true)
+    int countByStatusCode(@Param("statusCode") String statusCode);
+    
     
 }

@@ -80,12 +80,14 @@ public class StatisticsService {
             YearMonth targetMonth = currentMonth.minusMonths(i);
             String targetMonthStr = targetMonth.format(DateTimeFormatter.ofPattern("yyyyMM"));
             
+            int all = studentRepository.countMonthlyStudentsByMonth(dojangCode, targetMonthStr);
             int enrolled = studentRepository.countMonthlyEnrolledByMonth(dojangCode, targetMonthStr);
             int trial = studentRepository.countMonthlyTrialByMonth(dojangCode, targetMonthStr);
             int withdrawn = studentRepository.countMonthlyWithdrawnByMonth(dojangCode, targetMonthStr);
             
             result.add(MonthlyStatusDto.builder()
                     .month(targetMonthStr)
+                    .all(all)
                     .enrolled(enrolled)
                     .trial(trial)
                     .withdrawn(withdrawn)
@@ -162,7 +164,7 @@ public class StatisticsService {
         List<Object[]> rawData = studentManagementRepository.getEducationStats(dojangCode, month);
         
         // 전체 재원생 수
-        int totalCount = studentRepository.countCurrentTotal(dojangCode);
+        int totalCount = studentRepository.countStatisticCurrentTotal(dojangCode);
         
         List<EducationStatsDto> result = new ArrayList<>();
         
@@ -245,7 +247,7 @@ public class StatisticsService {
         int previousEnrollment = studentRepository.countMonthlyEnrolledByMonth(dojangCode, previousMonth);
         
         // 재원
-        int currentTotal = studentRepository.countCurrentTotal(dojangCode);
+        int currentTotal = studentRepository.countStatisticCurrentTotal(dojangCode);
         // 전월 재원생 수 계산 (현재 - 이번달입관 + 이번달퇴관)
         int currentMonthEnrolled = studentRepository.countMonthlyEnrollment(dojangCode, month);
         int currentMonthWithdrawn = studentRepository.countMonthlyWithdrawal(dojangCode, month);

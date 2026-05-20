@@ -28,4 +28,5 @@ public class StudentTrainingDetailRespDto {
     private String adjustmentDetail;     // 조정상세
     
     private LocalDate trainingStartDate; // 수련시작일
+    private LocalDate trainingEndDate;   // 수련종료일
 }

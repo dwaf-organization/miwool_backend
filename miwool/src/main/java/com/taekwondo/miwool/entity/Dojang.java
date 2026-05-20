@@ -69,6 +69,9 @@ public class Dojang {
     @Column(name = "selected_school2", length = 50)
     private String selectedSchool2;  // 지정학교2
     
+    @Column(name = "vip_package", length = 20)
+    private String vipPackage; // VIP 패키지 (경영, 수업, 마스터)
+    
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default
     private Integer isDeleted = 0;  // 삭제여부 (0=생성, 1=삭제)

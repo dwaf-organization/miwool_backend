@@ -246,8 +246,7 @@ public class StudentService {
     }
     
     /**
-     * 제자 목록 조회 (Native Query 사용 - 완전한 DB 처리)
-     * 모든 필터링 + 페이징을 DB에서 처리하여 최고 성능 달성
+     * 제자 목록 조회
      */
     public List<StudentListRespDto> getStudentList(String dojangCode, StudentListReqDto reqDto) {
         
@@ -275,7 +274,32 @@ public class StudentService {
         
         log.info("DB 조회 완료: {}건 / 전체 {}건", rawResults.size(), totalElements);
         
-        // 3. Object[]를 DTO로 변환 (필터링 없이 바로 변환)
+        // 3. 퇴관 학생들의 studentCode 수집
+        List<String> allStudentCodes = new ArrayList<>();
+        for (Object[] row : rawResults) {
+            String studentCode = (String) row[0];
+            String statusCode = (String) row[6];
+            if ("퇴관".equals(statusCode)) {
+                allStudentCodes.add(studentCode);
+            }
+        }
+        
+        // 4. 퇴관일 일괄 조회
+        Map<String, LocalDate> withdrawalDateMap = new HashMap<>();
+        if (!allStudentCodes.isEmpty()) {
+            List<Object[]> withdrawalDates = studentStatusRepository
+                    .findWithdrawalDatesByStudentCodes(allStudentCodes);
+            
+            for (Object[] row : withdrawalDates) {
+                String studentCode = (String) row[0];
+                java.sql.Date withdrawalDateSql = (java.sql.Date) row[1];
+                LocalDate withdrawalDate = withdrawalDateSql.toLocalDate();
+                withdrawalDateMap.put(studentCode, withdrawalDate);
+            }
+            log.info("퇴관일 조회 완료: {}건", withdrawalDateMap.size());
+        }
+        
+        // 5. Object[]를 DTO로 변환
         List<StudentListRespDto> resultList = new ArrayList<>();
         
         for (Object[] row : rawResults) {
@@ -290,12 +314,11 @@ public class StudentService {
             String beltCode = (String) row[7];
             java.sql.Date registDateSql = (java.sql.Date) row[8];
             LocalDate registDate = registDateSql.toLocalDate();
-            java.sql.Timestamp deletedAtTs = (java.sql.Timestamp) row[9];
             
             // 한국 나이 계산
             int age = AgeUtil.calculateKoreanAge(birthDate);
             
-            // 학년은 DB에서 가져온 값 사용 (계산하지 않음)
+            // 학년은 DB에서 가져온 값 사용
             String grade = gradeFromDb != null ? gradeFromDb : AgeUtil.calculateGrade(birthDate);
             
             // 급수명 조회
@@ -303,11 +326,10 @@ public class StudentService {
                     ? commonCodeRepository.findById(beltCode).map(CommonCode::getCodeName).orElse(beltCode)
                     : "";
             
-            
-            // 퇴관일 (퇴관 상태이고 deletedAt이 있을 경우)
-            LocalDate exitDate = null;
-            if ("퇴관".equals(statusCode) && deletedAtTs != null) {
-                exitDate = deletedAtTs.toLocalDateTime().toLocalDate();
+            // 퇴관일 (퇴관 상태인 경우만 student_status에서 조회)
+            LocalDate withdrawalDate = null;
+            if ("퇴관".equals(statusCode)) {
+                withdrawalDate = withdrawalDateMap.get(studentCode);
             }
             
             StudentListRespDto respDto = StudentListRespDto.builder()
@@ -322,20 +344,13 @@ public class StudentService {
                     .birthDate(birthDate)
                     .statusCode(statusCode)
                     .registDate(registDate)
-                    .exitDate(exitDate)
+                    .withdrawalDate(withdrawalDate)
                     .build();
             
             resultList.add(respDto);
         }
         
         log.info("DTO 변환 완료: {}건", resultList.size());
-        
-        // 5. 응답 생성
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", resultList);
-        response.put("totalElements", totalElements);
-        
-        log.info("제자 목록 조회 완료: 총 {}명, 현재 페이지 {}명", totalElements, resultList.size());
         
         return resultList;
     }
@@ -564,11 +579,12 @@ public class StudentService {
         log.info("퇴관 처리 시작: studentCode={}", studentCode);
         
         // 1. student_mst 삭제 플래그 설정
-        Student student = studentRepository.findById(studentCode).orElseThrow();
-        student.setIsDeleted(1);
-        student.setDeletedAt(LocalDateTime.now());
-        studentRepository.save(student);
-        log.info("제자 삭제 플래그 설정 완료");
+        // 26.05.07 삭제처리 안하는 것으로 변경
+//        Student student = studentRepository.findById(studentCode).orElseThrow();
+//        student.setIsDeleted(1);
+//        student.setDeletedAt(LocalDateTime.now());
+//        studentRepository.save(student);
+//        log.info("제자 삭제 플래그 설정 완료");
         
         // 2. 미납 청구서 삭제 (현재월 포함 이후 청구서만)
         // monthly_billing 테이블: billing_status='미납' AND billing_month >= 현재월

@@ -79,9 +79,10 @@ public class EducationManagementService {
                     boolean letterYn = ((Number) row[7]).intValue() > 0;
                     boolean snackYn = ((Number) row[8]).intValue() > 0;
                     boolean videoYn = ((Number) row[9]).intValue() > 0;
-                    boolean observationYn = ((Number) row[10]).intValue() > 0;
-                    boolean etcYn = ((Number) row[11]).intValue() > 0;
-                    String etcContent = (String) row[12];
+                    boolean awardYn = ((Number) row[10]).intValue() > 0;
+                    boolean observationYn = ((Number) row[11]).intValue() > 0;
+                    boolean etcYn = ((Number) row[12]).intValue() > 0;
+                    String etcContent = (String) row[13];
                     
                     // 나이 계산
                     int age = AgeUtil.calculateKoreanAge(birthDate);
@@ -97,6 +98,7 @@ public class EducationManagementService {
                             .letterYn(letterYn)
                             .snackYn(snackYn)
                             .videoYn(videoYn)
+                            .awardYn(awardYn)
                             .observationYn(observationYn)
                             .etcYn(etcYn)
                             .etcContent(etcContent)
@@ -128,7 +130,7 @@ public class EducationManagementService {
         // status=실시, category=null → 모든 항목 실시
         if ("실시".equals(status) && category == null) {
             return item.isPhoneYn() && item.isMessageYn() && item.isLetterYn() 
-                && item.isSnackYn() && item.isVideoYn() && item.isObservationYn() && item.isEtcYn();
+                && item.isSnackYn() && item.isVideoYn() && item.isAwardYn() && item.isObservationYn() && item.isEtcYn();
         }
         
         // status=실시, category=특정항목 → 해당 항목 실시
@@ -139,7 +141,7 @@ public class EducationManagementService {
         // status=미실시, category=null → 모든 항목 미실시
         if ("미실시".equals(status) && category == null) {
             return !item.isPhoneYn() && !item.isMessageYn() && !item.isLetterYn() 
-                && !item.isSnackYn() && !item.isVideoYn() && !item.isObservationYn() && !item.isEtcYn();
+                && !item.isSnackYn() && !item.isVideoYn() && !item.isAwardYn() && !item.isObservationYn() && !item.isEtcYn();
         }
         
         // status=미실시, category=특정항목 → 해당 항목 미실시
@@ -164,6 +166,7 @@ public class EducationManagementService {
             case "손편지": return item.isLetterYn() == expected;
             case "간식": return item.isSnackYn() == expected;
             case "영상": return item.isVideoYn() == expected;
+            case "상장": return item.isAwardYn() == expected;
             case "관찰지": return item.isObservationYn() == expected;
             case "기타": return item.isEtcYn() == expected;
             default: return true;
@@ -289,6 +292,7 @@ public class EducationManagementService {
             case "letter": return "손편지";
             case "snack": return "간식";
             case "video": return "영상";
+            case "award": return "상장";
             case "observation": return "관찰지";
             case "etc": return "기타";
             default: return null; // 알 수 없는 항목 무시
@@ -369,6 +373,7 @@ public class EducationManagementService {
         items.add(buildDetailItem("letter", "손편지", existingMap));
         items.add(buildDetailItem("snack", "간식", existingMap));
         items.add(buildDetailItem("video", "영상", existingMap));
+        items.add(buildDetailItem("award", "상장", existingMap));
         items.add(buildDetailItem("observation", "관찰지", existingMap));
         items.add(buildDetailItem("etc", "기타", existingMap));
         

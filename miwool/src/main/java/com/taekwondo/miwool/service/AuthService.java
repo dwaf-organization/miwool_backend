@@ -12,7 +12,9 @@ import com.taekwondo.miwool.dto.auth.respDto.RefreshTokenRespDto;
 import com.taekwondo.miwool.dto.auth.respDto.RegisterRespDto;
 import com.taekwondo.miwool.dto.auth.respDto.ResetPwRespDto;
 import com.taekwondo.miwool.entity.Dojang;
+import com.taekwondo.miwool.entity.SignupAlarm;
 import com.taekwondo.miwool.repository.DojangRepository;
+import com.taekwondo.miwool.repository.SignupAlarmRepository;
 import com.taekwondo.miwool.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ import java.util.Optional;
 public class AuthService {
     
     private final DojangRepository dojangRepository;
+    private final SignupAlarmRepository signupAlarmRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     
@@ -74,12 +77,25 @@ public class AuthService {
                 .approvalYn(0)  // 기본값: 미승인
                 .build();
         
-        // 5. DB 저장
+        // 5. DB 저장 (taekwondo_mst)
         Dojang savedDojang = dojangRepository.save(dojang);
         
-        log.info("새로운 도장 회원가입 완료: {} ({})", savedDojang.getDojangName(), savedDojang.getDojangCode());
+        // 6. signup_alarm 테이블에도 저장
+        SignupAlarm signupAlarm = SignupAlarm.builder()
+                .dojangCode(savedDojang.getDojangCode())
+                .dojangName(savedDojang.getDojangName())
+                .masterName(savedDojang.getMasterName())
+                .masterPhone(savedDojang.getMasterPhone())
+                .approvalStatus(0)  // 미승인
+                .isRead(0)  // 안읽음
+                .build();
         
-        // 6. 응답 DTO 생성
+        signupAlarmRepository.save(signupAlarm);
+        
+        log.info("새로운 도장 회원가입 완료: {} ({})", savedDojang.getDojangName(), savedDojang.getDojangCode());
+        log.info("가입 신청 알림 생성 완료");
+        
+        // 7. 응답 DTO 생성
         return RegisterRespDto.builder()
                 .dojangCode(savedDojang.getDojangCode())
                 .dojangId(savedDojang.getDojangId())

@@ -18,6 +18,12 @@ public interface ClassMstRepository extends JpaRepository<ClassMst, String> {
     List<ClassMst> findByDojangCodeOrderByClassCodeAsc(String dojangCode);
     
     /**
+     * 도장별 수업 목록 조회 (최신순)
+     */
+    List<ClassMst> findByDojangCodeOrderByStartTimeAsc(String dojangCode);
+    
+    
+    /**
      * 도장별 수업 목록 조회 (과거순)
      */
     List<ClassMst> findByDojangCodeOrderByCreatedAtAsc(String dojangCode);
@@ -87,5 +93,26 @@ public interface ClassMstRepository extends JpaRepository<ClassMst, String> {
             """, nativeQuery = true)
         List<Object[]> findClassStudentDetails(@Param("classCode") String classCode);
             
-            
+        // 수업 목록 및 수강생 수 (use_yn='Y'인 것만)
+        // (day_of_week, class_name, start_time, end_time, student_count)
+        @Query(value = 
+            "SELECT " +
+            "    c.day_of_week, " +
+            "    c.class_name, " +
+            "    c.start_time, " +
+            "    c.end_time, " +
+            "    COUNT(DISTINCT sc.student_code) AS student_count " +
+            "FROM class_mst c " +
+            "LEFT JOIN student_class sc ON c.class_code = sc.class_code " +
+            "    AND sc.is_current = 1 " +
+            "WHERE c.dojang_code = :dojangCode " +
+            "AND c.use_yn = 'Y' " +
+            "GROUP BY c.day_of_week, c.class_name, c.start_time, c.end_time " +
+            "ORDER BY " +
+            "    FIELD(c.day_of_week, '월', '화', '수', '목', '금', '토', '일'), " +
+            "    c.start_time",
+            nativeQuery = true)
+        List<Object[]> findClassesWithStudentCount(@Param("dojangCode") String dojangCode);
+        
+        
 }

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -34,8 +35,9 @@ public class MonthlyBillingScheduler {
     public void generateMonthlyBillings() {
         log.info("=== 월별 청구서 자동 발행 시작 ===");
         
-        String currentMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
         LocalDate today = LocalDate.now();
+        String currentMonth = today.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        YearMonth yearMonth = YearMonth.from(today);
         
         // 1. 활성화된 수련정보 조회 (퇴관 학생 제외)
         List<StudentTraining> activeTrainings = studentTrainingRepository
@@ -74,12 +76,33 @@ public class MonthlyBillingScheduler {
                     continue;
                 }
                 
-                // 4. 청구서 생성
+                // 4. 각 학생의 청구일 계산 (billingCycleDay 사용)
+                Integer billingCycleDay = tuition.getBillingCycleDay();
+                if (billingCycleDay == null || billingCycleDay < 1) {
+                    log.warn("청구주기일 없음: trainingInfoCode={}", 
+                        training.getTrainingInfoCode());
+                    skipCount++;
+                    continue;
+                }
+                
+                // 해당 월의 마지막 날짜 확인 (예: 2월은 28일, 4월은 30일)
+                int lastDayOfMonth = yearMonth.lengthOfMonth();
+                
+                // billingCycleDay가 해당 월의 일수보다 크면 월 마지막 날로 설정
+                int actualBillingDay = Math.min(billingCycleDay, lastDayOfMonth);
+                
+                LocalDate billingDate = LocalDate.of(
+                    today.getYear(),
+                    today.getMonthValue(),
+                    actualBillingDay
+                );
+                
+                // 5. 청구서 생성
                 MonthlyBilling billing = MonthlyBilling.builder()
                     .studentCode(training.getStudentCode())
                     .trainingInfoCode(training.getTrainingInfoCode())
                     .billingMonth(currentMonth)
-                    .billingDate(today)
+                    .billingDate(billingDate)  // 각 학생의 청구일
                     .trainingStartDate(training.getStartDate())
                     .trainingEndDate(training.getStartDate().plusMonths(1))
                     .billingAmount(tuition.getActualPrice())
@@ -88,9 +111,8 @@ public class MonthlyBillingScheduler {
                 
                 monthlyBillingRepository.save(billing);
                 
-                log.debug("청구서 발행 성공: studentCode={}, trainingInfoCode={}, amount={}", 
-                    training.getStudentCode(), training.getTrainingInfoCode(), 
-                    tuition.getActualPrice());
+                log.debug("청구서 발행 성공: studentCode={}, billingDate={}, amount={}", 
+                    training.getStudentCode(), billingDate, tuition.getActualPrice());
                 
                 successCount++;
                 

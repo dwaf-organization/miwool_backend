@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제자 대량 등록</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info-box li {
+            color: #555;
+            margin-bottom: 5px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .info-box li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="file"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .result-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .result-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .error-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .error-item {
+            padding: 8px;
+            background: white;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 제자 대량 등록</h1>
+        <p class="subtitle">엑셀 파일을 업로드하여 여러 명의 제자를 한 번에 등록하세요</p>
+        
+        <div class="info-box">
+            <h3>📋 안내사항</h3>
+            <ul>
+                <li>엑셀 템플릿을 다운로드하여 작성해주세요</li>
+                <li>4행부터 데이터를 입력해주세요 (1~3행은 설명란)</li>
+                <li>필수 항목은 반드시 입력해야 합니다</li>
+                <li>최대 파일 크기: 10MB</li>
+            </ul>
+        </div>
+        
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="dojangCode">도장 코드 *</label>
+                <input type="text" id="dojangCode" name="dojangCode" 
+                       placeholder="예: MW26999" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="file">엑셀 파일 *</label>
+                <input type="file" id="file" name="file" 
+                       accept=".xlsx,.xls" required>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn-secondary" onclick="downloadTemplate()">
+                    📥 템플릿 다운로드
+                </button>
+                <button type="submit" class="btn-primary">
+                    🚀 일괄 등록
+                </button>
+            </div>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">처리 중입니다...</p>
+        </div>
+        
+        <div class="result-box" id="resultBox"></div>
+    </div>
+    
+    <script>
+        // 폼 제출
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const dojangCode = document.getElementById('dojangCode').value;
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('dojangCode', dojangCode);
+            formData.append('file', file);
+            
+            // 로딩 표시
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultBox').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/v1/admin/students/bulk-upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // 로딩 숨김
+                document.getElementById('loading').style.display = 'none';
+                
+                // 결과 표시
+                showResult(result);
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert('오류가 발생했습니다: ' + error.message);
+            }
+        });
+        
+        // 결과 표시
+        function showResult(result) {
+            const resultBox = document.getElementById('resultBox');
+            
+            if (result.code === 1) {
+                const data = result.data;
+                
+                let html = `<strong>${result.message}</strong><br><br>`;
+                html += `총 ${data.totalCount}건 중 성공 ${data.successCount}건, 실패 ${data.failCount}건`;
+                
+                if (data.errors && data.errors.length > 0) {
+                    html += '<div class="error-list">';
+                    data.errors.forEach(error => {
+                        html += `<div class="error-item">`;
+                        html += `<strong>행 ${error.row}</strong> - ${error.studentName || '(이름 없음)'}: ${error.error}`;
+                        html += `</div>`;
+                    });
+                    html += '</div>';
+                }
+                
+                resultBox.className = 'result-box result-success';
+                resultBox.innerHTML = html;
+            } else {
+                resultBox.className = 'result-box result-error';
+                resultBox.innerHTML = `<strong>오류</strong><br>${result.message}`;
+            }
+            
+            resultBox.style.display = 'block';
+        }
+        
+        // 템플릿 다운로드
+        function downloadTemplate() {
+            window.location.href = '/api/v1/admin/students/download-template';
+        }
+    </script>
+</body>
+</html>
