@@ -71,6 +71,9 @@ public class Student {
     @Column(name = "belt_code", length = 20)
     private String beltCode;
     
+    @Column(name = "rope_belt_code", length = 20)
+    private String ropeBeltCode;  // 현재 줄넘기 띠
+    
     @Column(name = "regist_date", nullable = false)
     private LocalDate registDate;  // 입관일
     
@@ -97,6 +100,9 @@ public class Student {
     
     @Column(name = "has_allergy")
     private Integer hasAllergy;  // 알레르기여부
+    
+    @Column(name = "has_surgery")
+    private Integer hasSurgery;  // 수술여부 (1=있음, 0=없음)
     
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default

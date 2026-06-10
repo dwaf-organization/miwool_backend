@@ -15,6 +15,9 @@ public interface StudentStatusRepository extends JpaRepository<StudentStatus, St
     
 	Optional<StudentStatus> findFirstByStatusHistoryCodeStartingWithOrderByStatusHistoryCodeDesc(String prefix);
 	
+    // 재원이력 전체 조회 (날짜 내림차순)
+    List<StudentStatus> findByStudentCodeOrderByChangeDateDescCreatedAtDesc(String studentCode);
+    
     /**
      * 해당 월에 생성된 상태 이력 수 조회 (statusHistoryCode 생성용)
      */
@@ -26,12 +29,10 @@ public interface StudentStatusRepository extends JpaRepository<StudentStatus, St
      */
     Optional<StudentStatus> findTopByStudentCodeOrderByCreatedAtDesc(String studentCode);
     
-    /**
-     * 특정 월말 기준 상태별 제자수 조회
-     */
+    // countByStatusAsOfDate - 복관을 재원으로 집계 (기존 메서드 수정)
     @Query(value = """
         SELECT 
-          ss.status_code,
+          CASE WHEN ss.status_code = '복관' THEN '재원' ELSE ss.status_code END AS status_code,
           COUNT(DISTINCT ss.student_code) as count
         FROM (
           SELECT 
@@ -52,7 +53,8 @@ public interface StudentStatusRepository extends JpaRepository<StudentStatus, St
             AND sm.is_deleted = 0
             AND sm.created_at <= :endOfMonth
         ) ss
-        GROUP BY ss.status_code
+        GROUP BY 
+          CASE WHEN ss.status_code = '복관' THEN '재원' ELSE ss.status_code END
         """, nativeQuery = true)
     List<Object[]> countByStatusAsOfDate(
             @Param("dojangCode") String dojangCode,

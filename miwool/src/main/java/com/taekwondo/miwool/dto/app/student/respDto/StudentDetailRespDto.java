@@ -49,6 +49,9 @@ public class StudentDetailRespDto {
         private String studentPhone; // 연락처
         private String beltCode; // 급수코드
         private String beltName; // 급수명
+        private String ropeBeltCode; // 줄넘기 급수코드
+        private String ropeBeltName; // 줄넘기 급수명
+        private LocalDate promoDate;    // 승단예정일
     }
     
     @Data
@@ -118,5 +121,7 @@ public class StudentDetailRespDto {
         private String changeNeedEtc; // 변화필요부분 기타값
         private List<String> strength; // 강점명 리스트
         private String strengthEtc; // 강점 기타값
+        private String skill;        // 기능습득속도
+        private String skillEtc;     // 기능습득속도 기타값
     }
 }

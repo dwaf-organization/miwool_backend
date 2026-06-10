@@ -18,6 +18,7 @@ public class EducationItemsDto {
     private boolean video;         // 영상
     private boolean award;         // 상장
     private boolean observation;   // 관찰지
+    private boolean inbody;        // 인바디
     private boolean etc;           // 기타
     private String etcContent;     // 기타내용
 }

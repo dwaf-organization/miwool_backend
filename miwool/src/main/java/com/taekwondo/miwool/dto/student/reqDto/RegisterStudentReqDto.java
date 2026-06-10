@@ -24,12 +24,13 @@ public class RegisterStudentReqDto {
     
     private String profileImage;             // 이미지 URL
     
-    
     @NotNull(message = "입관일은 필수입니다")
     private LocalDate registDate;  // 입관일
     
     @NotBlank(message = "급수는 필수입니다")
     private String beltCode;  // 급수 (공통코드)
+    
+    private String ropeBeltCode;  // 줄넘기 급수 (공통코드)
     
     @NotNull(message = "생년월일은 필수입니다")
     private LocalDate birthDate;  // 생년월일
@@ -63,6 +64,7 @@ public class RegisterStudentReqDto {
     
     private Integer hasMedication;  // 복용약여부
     private Integer hasAllergy;  // 알레르기여부
+    private Integer hasSurgery;  // 수술여부 (1=있음, 0=없음)
     private String healthNote;  // 건강관련메모
     
     // ===== 보호자 정보 =====

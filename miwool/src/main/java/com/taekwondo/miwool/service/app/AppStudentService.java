@@ -42,6 +42,7 @@ public class AppStudentService {
     private final CommonCodeRepository commonCodeRepository;
     private final StudentBeltRepository studentBeltRepository;
     private final StudentStatusRepository studentStatusRepository;
+    private final StudentSkillRepository studentSkillRepository;
 
     /**
      * 앱 제자 등록
@@ -73,6 +74,7 @@ public class AppStudentService {
                 .className(reqDto.getClassName())
                 .statusCode("재원")
                 .beltCode(reqDto.getBeltCode())
+                .ropeBeltCode(reqDto.getRopeBeltCode())
                 .isDeleted(0)
                 .build();
         studentRepository.save(student);
@@ -100,6 +102,7 @@ public class AppStudentService {
                 .beltHistoryCode(beltHistoryCode)
                 .studentCode(studentCode)
                 .beltCode(reqDto.getBeltCode())
+                .ropeBeltCode(reqDto.getRopeBeltCode())
                 .taekwondoMonths(reqDto.getTaekwondoMonths() != null ? reqDto.getTaekwondoMonths() : 0)
                 .acquiredAt(LocalDate.now())
                 .build();
@@ -252,15 +255,29 @@ public class AppStudentService {
     // 기본정보
     private StudentDetailRespDto.BasicInfoDto getBasicInfo(Student student) {
         int age = AgeUtil.calculateKoreanAge(student.getBirthDate());
-        
-        // 급수명 조회
+ 
+        // 태권도 급수명 조회
         String beltName = null;
         if (student.getBeltCode() != null) {
             beltName = commonCodeRepository.findById(student.getBeltCode())
                     .map(code -> code.getCodeName())
                     .orElse(null);
         }
-        
+ 
+        // 줄넘기 급수명 조회
+        String ropeBeltName = null;
+        if (student.getRopeBeltCode() != null) {
+            ropeBeltName = commonCodeRepository.findById(student.getRopeBeltCode())
+                    .map(code -> code.getCodeName())
+                    .orElse(null);
+        }
+ 
+        // 승단예정일 조회 (promo_date가 있는 최신 이력 기준) ← 추가!
+        LocalDate promoDate = studentBeltRepository
+                .findTopByStudentCodeAndPromoDateIsNotNullOrderByCreatedAtDesc(student.getStudentCode())
+                .map(StudentBelt::getPromoDate)
+                .orElse(null);
+ 
         return StudentDetailRespDto.BasicInfoDto.builder()
                 .profileImageUrl(student.getProfileImageUrl())
                 .genderCode(student.getGenderCode())
@@ -273,6 +290,9 @@ public class AppStudentService {
                 .studentPhone(student.getStudentPhone())
                 .beltCode(student.getBeltCode())
                 .beltName(beltName)
+                .ropeBeltCode(student.getRopeBeltCode())
+                .ropeBeltName(ropeBeltName)
+                .promoDate(promoDate)  // ← 추가!
                 .build();
     }
 
@@ -503,6 +523,20 @@ public class AppStudentService {
             .map(StudentStrength::getEtcValue)
             .orElse(null);
         
+        // 기능습득속도 조회 (단일 선택)
+        String skill = null;
+        String skillEtc = null;
+        Optional<StudentSkill> studentSkillOpt = studentSkillRepository.findByStudentCode(studentCode);
+        if (studentSkillOpt.isPresent()) {
+            skill = studentSkillOpt.get().getSkillCode();
+            // 코드명으로 변환
+            String finalSkill = skill;
+            skill = commonCodeRepository.findById(finalSkill)
+                    .map(c -> c.getCodeName())
+                    .orElse(null);
+            skillEtc = studentSkillOpt.get().getEtcValue();
+        }
+        
         return StudentDetailRespDto.TraitsDto.builder()
                 .personalityBasic(personalityBasic)
                 .personalityBasicEtc(personalityBasicEtc)
@@ -516,6 +550,8 @@ public class AppStudentService {
                 .changeNeedEtc(changeNeedEtc)
                 .strength(strength)
                 .strengthEtc(strengthEtc)
+                .skill(skill)
+                .skillEtc(skillEtc)
                 .build();
     }
 
@@ -551,18 +587,20 @@ public class AppStudentService {
         List<StudentListRespDto.StudentDto> students = new ArrayList<>();
         
         for (Object[] row : studentPage.getContent()) {
-            String studentCode = (String) row[0];
-            String studentName = (String) row[1];
+            String studentCode    = (String) row[0];
+            String studentName    = (String) row[1];
             Integer genderCodeInt = (Integer) row[2];
-            Date birthDateSql = (Date) row[3];
-            LocalDate birthDate = birthDateSql.toLocalDate();
-            String gradeStr = (String) row[4];
-            String beltName = (String) row[5];
-            String studentPhone = (String) row[6];
-            String statusCodeStr = (String) row[7];
-            Date registDateSql = (Date) row[8];
-            LocalDate registDate = registDateSql.toLocalDate();
+            Date birthDateSql     = (Date) row[3];
+            LocalDate birthDate   = birthDateSql.toLocalDate();
+            String gradeStr       = (String) row[4];
+            String beltName       = (String) row[5];
+            String studentPhone   = (String) row[6];
+            String statusCodeStr  = (String) row[7];
+            Date registDateSql    = (Date) row[8];
+            LocalDate registDate  = registDateSql.toLocalDate();
             LocalDateTime deletedAt = row[9] != null ? ((java.sql.Timestamp) row[9]).toLocalDateTime() : null;
+            String ropeBeltCode   = (String) row[10];
+            String ropeBeltName   = (String) row[11];
             
             int age = AgeUtil.calculateKoreanAge(birthDate);
             
@@ -573,6 +611,8 @@ public class AppStudentService {
                     .age(age)
                     .grade(gradeStr)
                     .beltName(beltName)
+                    .ropeBeltCode(ropeBeltCode)
+                    .ropeBeltName(ropeBeltName)
                     .studentPhone(studentPhone)
                     .statusCode(statusCodeStr)
                     .registDate(registDate)

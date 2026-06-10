@@ -153,6 +153,8 @@ public class ActivityService {
                 .activityName(activity.getActivityName())
                 .activityDate(activity.getActivityDate())
                 .activityType(activity.getActivityType())
+                .activityArea(activity.getActivityArea())
+                .activityManager(activity.getActivityManager())
                 .description(activity.getDescription())
                 .participants(participants)
                 .build();
@@ -176,6 +178,8 @@ public class ActivityService {
                 .activityName(reqDto.getActivityName())
                 .activityDate(reqDto.getActivityDate())
                 .activityType(reqDto.getActivityType())
+                .activityArea(reqDto.getActivityArea())
+                .activityManager(reqDto.getActivityManager())
                 .description(reqDto.getDescription())
                 .build();
         
@@ -219,6 +223,8 @@ public class ActivityService {
         activity.setActivityName(reqDto.getActivityName());
         activity.setActivityDate(reqDto.getActivityDate());
         activity.setActivityType(reqDto.getActivityType());
+        activity.setActivityArea(reqDto.getActivityArea());
+        activity.setActivityManager(reqDto.getActivityManager());
         activity.setDescription(reqDto.getDescription());
         
         activityRepository.save(activity);
@@ -339,6 +345,8 @@ public class ActivityService {
                 .activityDate(activity.getActivityDate())
                 .activityType(activity.getActivityType())
                 .activityName(activity.getActivityName())
+                .activityArea(activity.getActivityArea())
+                .activityManager(activity.getActivityManager())
                 .description(activity.getDescription())
                 .build();
     }

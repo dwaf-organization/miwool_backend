@@ -52,11 +52,14 @@ public class AppBillingService {
                     String studentName = (String) row[2];
                     LocalDate birthDate = ((java.sql.Date) row[3]).toLocalDate();
                     String grade = (String) row[4];
-                    Integer billingAmount = (Integer) row[5];
+                    Integer billingAmount = ((Number) row[5]).intValue();
                     LocalDate billingDate = ((java.sql.Date) row[6]).toLocalDate();
                     String billingStatus = (String) row[7];
+                    String paymentMethod = (String) row[8];
+                    Integer actualPaymentAmount = row[9] != null ? ((Number) row[9]).intValue() : null;
+                    String receiptPhone = (String) row[10];
+                    String note = (String) row[11];
                     
-                    // 나이 계산
                     Integer age = AgeUtil.calculateKoreanAge(birthDate);
                     
                     return BillingStudentDto.builder()
@@ -68,6 +71,10 @@ public class AppBillingService {
                             .billingAmount(billingAmount)
                             .billingDate(billingDate)
                             .billingStatus(billingStatus)
+                            .paymentMethod(paymentMethod)
+                            .actualPaymentAmount(actualPaymentAmount)
+                            .receiptPhone(receiptPhone)
+                            .note(note)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -95,24 +102,52 @@ public class AppBillingService {
         MonthlyBilling monthlyBilling = monthlyBillingRepository.findById(reqDto.getBillingCode())
                 .orElseThrow(() -> new IllegalArgumentException("청구 정보를 찾을 수 없습니다."));
         
-        // 2. tuition_payment INSERT
+        // 2. 이미 납부완료인지 확인
+        if ("납부완료".equals(monthlyBilling.getBillingStatus())) {
+            throw new IllegalArgumentException("이미 납부완료된 청구서입니다.");
+        }
+        
+        // 3. tuition_payment INSERT
         TuitionPayment tuitionPayment = TuitionPayment.builder()
                 .billingCode(reqDto.getBillingCode())
                 .paymentMethod(reqDto.getPaymentMethod())
                 .paymentAmount(reqDto.getPaidAmount())
                 .paymentDate(reqDto.getPaidAt())
+                .receiptPhone(reqDto.getReceiptPhone())
+                .note(reqDto.getNote())
                 .build();
         tuitionPaymentRepository.save(tuitionPayment);
         
-        log.info("tuition_payment 저장 완료: paymentCode={}", tuitionPayment.getPaymentCode());
-        
-        // 3. monthly_billing UPDATE
+        // 4. monthly_billing UPDATE
         monthlyBilling.setBillingStatus("납부완료");
         monthlyBilling.setPaidAt(reqDto.getPaidAt().atStartOfDay());
         monthlyBillingRepository.save(monthlyBilling);
         
-        log.info("monthly_billing 업데이트 완료: billingStatus=납부완료");
-        
         log.info("앱 납부처리 완료: billingCode={}", reqDto.getBillingCode());
+    }
+    
+    // 납부취소
+    @Transactional
+    public void cancelPayment(Integer billingCode) {
+        log.info("앱 납부취소: billingCode={}", billingCode);
+        
+        // 1. monthly_billing 조회
+        MonthlyBilling monthlyBilling = monthlyBillingRepository.findById(billingCode)
+                .orElseThrow(() -> new IllegalArgumentException("청구 정보를 찾을 수 없습니다."));
+        
+        // 2. 납부완료 상태 확인
+        if (!"납부완료".equals(monthlyBilling.getBillingStatus())) {
+            throw new IllegalArgumentException("납부완료 상태가 아닙니다.");
+        }
+        
+        // 3. tuition_payment 삭제
+        tuitionPaymentRepository.deleteByBillingCode(billingCode);
+        
+        // 4. monthly_billing 원복
+        monthlyBilling.setBillingStatus("미납");
+        monthlyBilling.setPaidAt(null);
+        monthlyBillingRepository.save(monthlyBilling);
+        
+        log.info("앱 납부취소 완료: billingCode={}", billingCode);
     }
 }

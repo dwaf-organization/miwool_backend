@@ -23,6 +23,7 @@ public class StudentBasicInfoRespDto {
     private LocalDate registDate;            // 입관일
     private String statusCode;               // 재원상태
     private String beltCode;                 // 급수
+    private String ropeBeltCode;             // 줄넘기 급수
     private String profileImage;             // 이미지 URL
     
     // === 개인 정보 (수정 가능) ===
@@ -56,6 +57,7 @@ public class StudentBasicInfoRespDto {
     // === 건강 정보 (수정 가능) ===
     private Integer hasMedication;           // 복용약여부 (0=무, 1=유)
     private Integer hasAllergy;              // 알레르기여부 (0=무, 1=유)
+    private Integer hasSurgery;              // 수술여부 (0=무, 1=유)
     private String healthNote;               // 건강메모
     
     // === 보호자 정보 (읽기 전용) ===

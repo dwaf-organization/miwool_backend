@@ -27,6 +27,10 @@ public class UpdateActivityReqDto {
     
     private String activityType;           // 활동유형 (선택)
     
+    private String activityArea;           // 활동지역 (선택)
+    
+    private String activityManager;        // 활동담당자 (선택)
+    
     private String description;            // 설명 (선택)
     
     @NotNull(message = "참가 제자 목록은 필수입니다")

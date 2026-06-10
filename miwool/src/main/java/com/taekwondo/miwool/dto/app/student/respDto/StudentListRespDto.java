@@ -32,6 +32,8 @@ public class StudentListRespDto {
         private Integer age; // 나이
         private String grade; // 학년
         private String beltName; // 급수명
+        private String ropeBeltCode;   // 줄넘기 급수코드
+        private String ropeBeltName;   // 줄넘기 급수명
         private String studentPhone; // 연락처
         private String statusCode; // 재원상태
         private LocalDate registDate; // 입관일

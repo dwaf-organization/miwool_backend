@@ -139,6 +139,15 @@ public class CommonCodeService {
                         .build())
                 .collect(Collectors.toList()));
         
+        // 10. 기능습득속도 (SKILL) ← 추가!
+        List<CommonCode> skillList = commonCodeRepository.findByGroupCodeAndUseYnOrderByCodeOrderAsc("SKILL", "Y");
+        result.put("skill", skillList.stream()
+                .map(code -> TraitOptionDto.builder()
+                        .code(code.getCommonCode())
+                        .name(code.getCodeName())
+                        .build())
+                .collect(Collectors.toList()));
+        
         log.info("특성 항목 조회 완료");
         
         return result;
@@ -177,6 +186,8 @@ public class CommonCodeService {
                     String gradeVal = (String) row[4];
                     String beltCodeVal = (String) row[5];
                     String beltName = (String) row[6];
+                    String ropeBeltCode = (String) row[7];
+                    String ropeBeltName = (String) row[8];
                     
                     // 한국나이 계산
                     int age = AgeUtil.calculateKoreanAge(birthDate);
@@ -189,6 +200,8 @@ public class CommonCodeService {
                             .grade(gradeVal)
                             .beltCode(beltCodeVal)
                             .beltName(beltName)
+                            .ropeBeltCode(ropeBeltCode)
+                            .ropeBeltName(ropeBeltName)
                             .build();
                 })
                 .collect(Collectors.toList());

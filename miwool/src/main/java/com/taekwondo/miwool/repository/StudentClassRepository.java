@@ -49,6 +49,14 @@ public interface StudentClassRepository extends JpaRepository<StudentClass, Inte
      */
     List<StudentClass> findByTrainingInfoCode(Integer trainingInfoCode);
 
+    // 휴관 처리 시 현재 수업정보 end_date 업데이트
+    @Modifying
+    @Query("UPDATE StudentClass sc SET sc.endDate = :endDate " +
+           "WHERE sc.studentCode = :studentCode AND sc.isCurrent = 1")
+    int updateEndDateByStudentCode(
+            @Param("studentCode") String studentCode,
+            @Param("endDate") LocalDate endDate);
+    
     /**
      * 앱 제자 상세 - 패키지별 수업 정보 조회
      * 결과: [패키지명, 수업명, 시작시간, 종료시간, 요일, 총교육비]

@@ -19,6 +19,8 @@ public class ActivityDetailRespDto {
     private String activityName;           // 활동명
     private LocalDate activityDate;        // 활동일자
     private String activityType;           // 활동유형
+    private String activityArea;           // 활동지역
+    private String activityManager;        // 활동담당자
     private String description;            // 설명
     
     // 참가자 목록

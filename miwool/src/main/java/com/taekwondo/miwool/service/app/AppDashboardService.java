@@ -3,6 +3,7 @@ package com.taekwondo.miwool.service.app;
 import com.taekwondo.miwool.dto.app.dashboard.respDto.DashboardRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.CalendarRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.DailyRespDto;
+import com.taekwondo.miwool.dto.dashboard.respDto.PopupRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.SummaryTabRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.WeeklyRespDto;
 import com.taekwondo.miwool.service.DashboardService;
@@ -74,4 +75,14 @@ public class AppDashboardService {
         log.info("앱 요약 데이터 조회: dojangCode={}, month={}", dojangCode, month);
         return dashboardService.getSummaryData(dojangCode, month);
     }
+    
+    /**
+     * 앱 달력 팝업 데이터 조회
+     */
+    @Transactional(readOnly = true)
+    public PopupRespDto getPopupData(String dojangCode, String date) {
+        log.info("앱 달력 팝업 데이터 조회: dojangCode={}, date={}", dojangCode, date);
+        return dashboardService.getPopupData(dojangCode, date);
+    }
+    
 }

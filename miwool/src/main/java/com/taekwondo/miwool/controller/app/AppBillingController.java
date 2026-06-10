@@ -3,6 +3,7 @@ package com.taekwondo.miwool.controller.app;
 import com.taekwondo.miwool.common.dto.RespDto;
 import com.taekwondo.miwool.dto.app.billing.reqDto.ConfirmPaymentReqDto;
 import com.taekwondo.miwool.dto.app.billing.respDto.BillingStatusRespDto;
+import com.taekwondo.miwool.dto.billing.reqDto.CancelPaymentReqDto;
 import com.taekwondo.miwool.service.app.AppBillingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,4 +65,31 @@ public class AppBillingController {
                     .body(RespDto.fail("납부처리 중 오류가 발생했습니다."));
         }
     }
+    
+    // 앱 납부취소
+    @PostMapping("/cancel-payment")
+    public ResponseEntity<?> cancelPayment(
+            @RequestBody CancelPaymentReqDto reqDto) {
+        
+        try {
+            appBillingService.cancelPayment(reqDto.getBillingCode());
+            
+            return ResponseEntity
+                    .ok()
+                    .body(RespDto.success("납부가 취소되었습니다.", null));
+            
+        } catch (IllegalArgumentException e) {
+            log.error("앱 납부취소 실패: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(RespDto.fail(e.getMessage()));
+            
+        } catch (Exception e) {
+            log.error("앱 납부취소 중 오류 발생", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespDto.fail("납부취소 중 오류가 발생했습니다."));
+        }
+    }
+    
 }

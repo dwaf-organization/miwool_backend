@@ -34,6 +34,9 @@ public class TuitionPayment {
     @Column(name = "payment_method", length = 20)
     private String paymentMethod; // 납부방법
 
+    @Column(name = "receipt_phone", length = 20)
+    private String receiptPhone; // 현금영수증 전화번호
+    
     @Column(name = "note", length = 200)
     private String note; // 메모
 

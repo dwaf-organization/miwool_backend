@@ -55,27 +55,31 @@ public class BillingService {
         
         // DTO 변환 (나머지 동일)
         List<BillingListRespDto> result = rawResults.stream()
-            .map(row -> {
-                java.sql.Date birthDateSql = (java.sql.Date) row[3];
-                LocalDate birthDate = birthDateSql.toLocalDate();
-                int age = AgeUtil.calculateKoreanAge(birthDate);
-                
-                return BillingListRespDto.builder()
-                    .studentCode((String) row[0])
-                    .genderCode((Integer) row[1])
-                    .studentName((String) row[2])
-                    .age(age)
-                    .grade((String) row[4])
-                    .beltCode((String) row[5])
-                    .beltName((String) row[6])
-                    .billingCode((Integer) row[7])
-                    .billingAmount((Integer) row[8])
-                    .billingDate(row[9] != null ? ((java.sql.Date) row[9]).toLocalDate() : null)
-                    .billingStatus((String) row[10])
-                    .paidAt(row[11] != null ? ((java.sql.Timestamp) row[11]).toLocalDateTime() : null)
-                    .build();
-            })
-            .toList();
+                .map(row -> {
+                    java.sql.Date birthDateSql = (java.sql.Date) row[3];
+                    LocalDate birthDate = birthDateSql.toLocalDate();
+                    int age = AgeUtil.calculateKoreanAge(birthDate);
+                    
+                    return BillingListRespDto.builder()
+                        .studentCode((String) row[0])
+                        .genderCode((Integer) row[1])
+                        .studentName((String) row[2])
+                        .age(age)
+                        .grade((String) row[4])
+                        .beltCode((String) row[5])
+                        .beltName((String) row[6])
+                        .billingCode((Integer) row[7])
+                        .billingAmount((Integer) row[8])
+                        .billingDate(row[9] != null ? ((java.sql.Date) row[9]).toLocalDate() : null)
+                        .billingStatus((String) row[10])
+                        .paidAt(row[11] != null ? ((java.sql.Timestamp) row[11]).toLocalDateTime() : null)
+                        .paymentMethod((String) row[12])
+                        .actualPaymentAmount(row[13] != null ? ((Number) row[13]).intValue() : null)
+                        .receiptPhone((String) row[14])
+                        .note((String) row[15])
+                        .build();
+                })
+                .toList();
         
         log.info("청구서 목록 조회 완료: {}건", result.size());
         return result;
@@ -96,30 +100,53 @@ public class BillingService {
             throw new IllegalStateException("이미 납부완료된 청구서입니다");
         }
         
-        // 3. 납부금액 검증
-        if (!reqDto.getPaymentAmount().equals(billing.getBillingAmount())) {
-            throw new IllegalArgumentException(
-                String.format("청구금액(%d원)과 납부금액(%d원)이 일치하지 않습니다", 
-                    billing.getBillingAmount(), reqDto.getPaymentAmount()));
-        }
-        
-        // 4. 납부 내역 저장
+        // 3. 납부 내역 저장 (금액 불일치 검증 제거, receiptPhone/note 추가)
         TuitionPayment payment = TuitionPayment.builder()
             .billingCode(reqDto.getBillingCode())
             .paymentDate(reqDto.getPaymentDate())
             .paymentAmount(reqDto.getPaymentAmount())
             .paymentMethod(reqDto.getPaymentMethod())
+            .receiptPhone(reqDto.getReceiptPhone())  // ← 추가!
+            .note(reqDto.getNote())                  // ← 추가!
             .build();
         
         tuitionPaymentRepository.save(payment);
         log.info("납부 내역 저장 완료: paymentCode={}", payment.getPaymentCode());
         
-        // 5. 청구서 상태 업데이트
+        // 4. 청구서 상태 업데이트 (금액 무관하게 납부완료)
         billing.setBillingStatus("납부완료");
         billing.setPaidAt(LocalDateTime.now());
         monthlyBillingRepository.save(billing);
         
-        log.info("납부 처리 완료: billingCode={}, paymentAmount={}", 
-            reqDto.getBillingCode(), reqDto.getPaymentAmount());
+        log.info("납부 처리 완료: billingCode={}, actualAmount={}, billingAmount={}",
+            reqDto.getBillingCode(), reqDto.getPaymentAmount(), billing.getBillingAmount());
     }
+    
+    // 납부 취소
+    @Transactional
+    public void cancelPayment(Integer billingCode) {
+        log.info("납부 취소 시작: billingCode={}", billingCode);
+        
+        // 1. 청구서 조회
+        MonthlyBilling billing = monthlyBillingRepository
+            .findById(billingCode)
+            .orElseThrow(() -> new IllegalArgumentException("청구서를 찾을 수 없습니다"));
+        
+        // 2. 납부완료 상태 확인
+        if (!"납부완료".equals(billing.getBillingStatus())) {
+            throw new IllegalStateException("납부완료 상태가 아닙니다");
+        }
+        
+        // 3. tuition_payment 삭제
+        tuitionPaymentRepository.deleteByBillingCode(billingCode);
+        log.info("납부 내역 삭제 완료: billingCode={}", billingCode);
+        
+        // 4. 청구서 상태 원복
+        billing.setBillingStatus("미납");
+        billing.setPaidAt(null);
+        monthlyBillingRepository.save(billing);
+        
+        log.info("납부 취소 완료: billingCode={}", billingCode);
+    }
+    
 }

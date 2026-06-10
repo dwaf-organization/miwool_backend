@@ -400,8 +400,9 @@ public class StatisticsService {
             previousRevenueMap.put((String) row[0], ((Number) row[1]).intValue());
         }
         
+        // "유아" → "유아부" 로 변경
         List<StudentManagementSummaryRespDto.AgeRevenueDto> result = new ArrayList<>();
-        for (String ageGroup : new String[]{"유아", "초등부", "중등부", "고등부", "성인부"}) {
+        for (String ageGroup : new String[]{"유아부", "초등부", "중등부", "고등부", "성인부"}) {
             int count = countMap.getOrDefault(ageGroup, 0);
             int revenue = revenueMap.getOrDefault(ageGroup, 0);
             int previousRevenue = previousRevenueMap.getOrDefault(ageGroup, 0);

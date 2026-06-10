@@ -26,4 +26,9 @@ public class ProcessPaymentReqDto {
     private Integer paymentAmount; // 납부금액
     
     private String paymentMethod; // 납부방법
+    
+    private String receiptPhone; // 현금영수증 전화번호 (현금(영수증발행) 시)
+    
+    private String note; // 납부금액 변경 사유
+    
 }

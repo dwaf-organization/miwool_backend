@@ -2,6 +2,7 @@ package com.taekwondo.miwool.repository;
 
 import com.taekwondo.miwool.entity.StudentTraining;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,13 +33,22 @@ public interface StudentTrainingRepository extends JpaRepository<StudentTraining
      */
     Optional<StudentTraining> findById(Integer trainingInfoCode);
     
-    /**
-     * 활성화된 수련정보 조회 (퇴관 학생 제외)
-     * 스케줄러에서 청구서 발행 시 사용
-     */
-    @Query("SELECT st FROM StudentTraining st " +
-           "JOIN Student s ON st.studentCode = s.studentCode " +
-           "WHERE st.isCurrent = 1 AND (s.isDeleted = 0 OR s.isDeleted IS NULL)")
+    // 휴관 처리 시 현재 수련정보 end_date 업데이트
+    @Modifying
+    @Query("UPDATE StudentTraining st SET st.endDate = :endDate " +
+           "WHERE st.studentCode = :studentCode AND st.isCurrent = 1")
+    int updateEndDateByStudentCode(
+            @Param("studentCode") String studentCode,
+            @Param("endDate") LocalDate endDate);
+ 
+    // 스케줄러 - 활성 수련정보 조회 (퇴관 + 휴관 제외) - 기존 메서드 수정
+    @Query(value =
+        "SELECT st.* FROM student_training st " +
+        "JOIN student_mst s ON st.student_code = s.student_code " +
+        "WHERE st.is_current = 1 " +
+        "AND s.is_deleted = 0 " +
+        "AND s.status_code NOT IN ('퇴관', '휴관')",
+        nativeQuery = true)
     List<StudentTraining> findActiveTrainingsExcludingDeletedStudents();
     
 }

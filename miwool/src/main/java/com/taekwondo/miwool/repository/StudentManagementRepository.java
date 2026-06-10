@@ -34,6 +34,7 @@ public interface StudentManagementRepository extends JpaRepository<StudentManage
                    "  MAX(CASE WHEN sm.management_type_code = '영상' THEN 1 ELSE 0 END) as video_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '상장' THEN 1 ELSE 0 END) as award_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '관찰지' THEN 1 ELSE 0 END) as observation_yn, " +
+                   "  MAX(CASE WHEN sm.management_type_code = '인바디' THEN 1 ELSE 0 END) as inbody_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '기타' THEN 1 ELSE 0 END) as etc_yn, " +
                    "  MAX(CASE WHEN sm.management_type_code = '기타' THEN sm.note ELSE NULL END) as etc_content " +
                    "FROM student_mst s " +
@@ -44,7 +45,7 @@ public interface StudentManagementRepository extends JpaRepository<StudentManage
                    "  AND (:studentSearch IS NULL " +
                    "       OR s.student_code LIKE CONCAT('%', :studentSearch, '%') " +
                    "       OR s.student_name LIKE CONCAT('%', :studentSearch, '%')) " +
-                   "  AND (:beltCode IS NULL OR s.belt_code = :beltCode) " +
+                   "  AND (:beltCode IS NULL OR s.belt_code = :beltCode OR s.rope_belt_code = :beltCode) " +
                    "  AND (:genderCode IS NULL OR s.gender_code = :genderCode) " +
                    "  AND (:grade IS NULL OR s.grade = :grade) " +
                    "GROUP BY s.student_code, s.gender_code, s.student_name, s.birth_date, s.grade " +
@@ -161,7 +162,7 @@ public interface StudentManagementRepository extends JpaRepository<StudentManage
         JOIN taekwondo_mst d ON s.dojang_code = d.dojang_code
         WHERE YEAR(sm.executed_date) = :year 
           AND MONTH(sm.executed_date) = :month
-          AND sm.management_type_code IN ('전화', '문자', '손편지', '간식', '상장', '영상', '관찰지')
+          AND sm.management_type_code IN ('전화', '문자', '손편지', '간식', '상장', '영상', '관찰지', '인바디')
         GROUP BY s.dojang_code, d.dojang_name, sm.management_type_code
         """, nativeQuery = true)
     List<Object[]> countExecutionsByDojangAndType(

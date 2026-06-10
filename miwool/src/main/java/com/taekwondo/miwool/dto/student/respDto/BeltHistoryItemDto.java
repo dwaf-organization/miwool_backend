@@ -16,6 +16,9 @@ public class BeltHistoryItemDto {
     private String historyCode;        // 이력코드
     private String beltCode;           // 급수코드
     private String beltName;           // 급수명
+    private String ropeBeltCode;       // 줄넘기 급수코드
+    private String ropeBeltName;       // 줄넘기 급수명
     private int careerMonths;          // 경력개월수
     private LocalDate changeDate;      // 이력변경일
+    private LocalDate promoDate;   // 승단예정일
 }

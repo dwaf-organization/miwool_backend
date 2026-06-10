@@ -4,9 +4,11 @@ import com.taekwondo.miwool.dto.dashboard.respDto.CalendarRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.CalendarRespDto.DailyDataDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.CalendarRespDto.SummaryDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.DailyRespDto;
+import com.taekwondo.miwool.dto.dashboard.respDto.PopupRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.SummaryTabRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.WeeklyRespDto;
 import com.taekwondo.miwool.repository.MonthlyBillingRepository;
+import com.taekwondo.miwool.repository.StudentBeltRepository;
 import com.taekwondo.miwool.repository.StudentRepository;
 import com.taekwondo.miwool.repository.TuitionPaymentRepository;
 import com.taekwondo.miwool.util.AgeUtil;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -37,6 +40,7 @@ public class DashboardService {
     private final StudentRepository studentRepository;
     private final MonthlyBillingRepository monthlyBillingRepository;
     private final TuitionPaymentRepository tuitionPaymentRepository;
+    private final StudentBeltRepository studentBeltRepository;
 
     @Transactional(readOnly = true)
     public CalendarRespDto getCalendarData(String dojangCode, String month) {
@@ -74,6 +78,28 @@ public class DashboardService {
                     .build());
         }
 
+        // 4. 일별 승단예정 인원수 조회 ← 추가!
+        List<Object[]> promoData = studentBeltRepository.getPromotionCountByMonth(dojangCode, month);
+ 
+        for (Object[] row : promoData) {
+            Date promoDateSql = (Date) row[0];
+            String dateStr = promoDateSql.toLocalDate().toString();
+            int promoCount = ((Number) row[1]).intValue();
+ 
+            if (dailyMap.containsKey(dateStr)) {
+                dailyMap.get(dateStr).setPromotion(promoCount);
+            } else {
+                dailyMap.put(dateStr, DailyDataDto.builder()
+                        .date(dateStr)
+                        .enrollment(0)
+                        .withdrawal(0)
+                        .trial(0)
+                        .promotion(promoCount)
+                        .paidAmount(0)
+                        .build());
+            }
+        }
+
         // 3. 일별 납부완료 금액 조회
         List<Object[]> paidAmounts = monthlyBillingRepository.getDailyPaidAmount(dojangCode, month);
 
@@ -95,8 +121,12 @@ public class DashboardService {
                         .build());
             }
         }
-
-        // 4. Map을 List로 변환하고 날짜순 정렬
+        
+        dailyMap.values().forEach(dto -> {
+            if (dto.getPromotion() == null) dto.setPromotion(0);
+        });
+        
+        // 5. Map을 List로 변환하고 날짜순 정렬
         List<DailyDataDto> dailyData = new ArrayList<>(dailyMap.values());
         dailyData.sort((a, b) -> a.getDate().compareTo(b.getDate()));
 
@@ -355,4 +385,90 @@ public class DashboardService {
         return Math.round(((double) (current - previous) / previous) * 100 * 100.0) / 100.0; // 소수점 2자리
     }
     
+    /**
+     * 일자 클릭시 팝업 서비스
+     */
+    @Transactional(readOnly = true)
+    public PopupRespDto getPopupData(String dojangCode, String date) {
+        log.info("달력 팝업 데이터 조회 시작: dojangCode={}, date={}", dojangCode, date);
+ 
+        LocalDate localDate = LocalDate.parse(date);
+ 
+        // 1. 입관 제자 목록
+        List<Object[]> enrollmentRows = studentRepository.getStudentsByDateAndStatus(dojangCode, localDate, "재원");
+        List<PopupRespDto.StudentInfoDto> enrollment = toStudentInfoDtoList(enrollmentRows);
+ 
+        // 2. 퇴관 제자 목록
+        List<Object[]> withdrawalRows = studentRepository.getStudentsByDateAndStatus(dojangCode, localDate, "퇴관");
+        List<PopupRespDto.StudentInfoDto> withdrawal = toStudentInfoDtoList(withdrawalRows);
+ 
+        // 3. 체험 제자 목록
+        List<Object[]> trialRows = studentRepository.getStudentsByDateAndStatus(dojangCode, localDate, "체험");
+        List<PopupRespDto.StudentInfoDto> trial = toStudentInfoDtoList(trialRows);
+ 
+        // 4. 승단예정 제자 목록
+        List<Object[]> promoRows = studentBeltRepository.getPromotionStudentsByDate(dojangCode, localDate);
+        List<PopupRespDto.StudentInfoDto> promotion = promoRows.stream()
+                .map(row -> {
+                    String studentCode  = (String) row[0];
+                    String studentName  = (String) row[1];
+                    Integer genderCode  = (Integer) row[2];
+                    LocalDate birthDate = ((java.sql.Date) row[3]).toLocalDate();
+                    String beltCode     = (String) row[4];
+                    String beltName     = (String) row[5];
+                    String ropeBeltCode = (String) row[6];
+                    String ropeBeltName = (String) row[7];
+                    int age = AgeUtil.calculateKoreanAge(birthDate);
+ 
+                    return PopupRespDto.StudentInfoDto.builder()
+                            .studentCode(studentCode)
+                            .studentName(studentName)
+                            .genderCode(genderCode)
+                            .age(age)
+                            .beltCode(beltCode)
+                            .beltName(beltName)
+                            .ropeBeltCode(ropeBeltCode)
+                            .ropeBeltName(ropeBeltName)
+                            .build();
+                })
+                .collect(Collectors.toList());
+ 
+        log.info("달력 팝업 데이터 조회 완료: date={}", date);
+ 
+        return PopupRespDto.builder()
+                .date(date)
+                .enrollment(enrollment)
+                .withdrawal(withdrawal)
+                .trial(trial)
+                .promotion(promotion)
+                .build();
+    }
+ 
+    // 공통 변환 메서드
+    private List<PopupRespDto.StudentInfoDto> toStudentInfoDtoList(List<Object[]> rows) {
+        return rows.stream()
+                .map(row -> {
+                    String studentCode  = (String) row[0];
+                    String studentName  = (String) row[1];
+                    Integer genderCode  = (Integer) row[2];
+                    LocalDate birthDate = ((java.sql.Date) row[3]).toLocalDate();
+                    String beltCode     = (String) row[4];
+                    String beltName     = (String) row[5];
+                    String ropeBeltCode = (String) row[6];
+                    String ropeBeltName = (String) row[7];
+                    int age = AgeUtil.calculateKoreanAge(birthDate);
+ 
+                    return PopupRespDto.StudentInfoDto.builder()
+                            .studentCode(studentCode)
+                            .studentName(studentName)
+                            .genderCode(genderCode)
+                            .age(age)
+                            .beltCode(beltCode)
+                            .beltName(beltName)
+                            .ropeBeltCode(ropeBeltCode)
+                            .ropeBeltName(ropeBeltName)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
 }

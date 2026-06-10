@@ -2,6 +2,7 @@ package com.taekwondo.miwool.controller;
 
 import com.taekwondo.miwool.common.dto.RespDto;
 import com.taekwondo.miwool.dto.billing.reqDto.BillingListReqDto;
+import com.taekwondo.miwool.dto.billing.reqDto.CancelPaymentReqDto;
 import com.taekwondo.miwool.dto.billing.reqDto.ProcessPaymentReqDto;
 import com.taekwondo.miwool.dto.billing.respDto.BillingListRespDto;
 import com.taekwondo.miwool.service.BillingService;
@@ -33,8 +34,10 @@ public class BillingController {
             @RequestParam(value = "endDate", required = false) String endDate) {
         
         try {
+        	String processedBillingStatus = "전체".equals(billingStatus) ? null : billingStatus;
+        	
             BillingListReqDto reqDto = new BillingListReqDto(
-                studentSearch, billingStatus, startDate, endDate);
+                studentSearch, processedBillingStatus, startDate, endDate);
             
             List<BillingListRespDto> result = billingService.getBillingList(dojangCode, reqDto);
             
@@ -83,4 +86,37 @@ public class BillingController {
                     .body(RespDto.fail("납부 처리 중 오류가 발생했습니다."));
         }
     }
+    
+    // 납부 취소
+    @PostMapping("/payment/cancel")
+    public ResponseEntity<?> cancelPayment(
+            @Validated @RequestBody CancelPaymentReqDto reqDto) {
+        
+        try {
+            billingService.cancelPayment(reqDto.getBillingCode());
+            
+            return ResponseEntity
+                    .ok()
+                    .body(RespDto.success("납부가 취소되었습니다.", null));
+            
+        } catch (IllegalArgumentException e) {
+            log.error("납부 취소 실패: {}", e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body(RespDto.fail(e.getMessage()));
+            
+        } catch (IllegalStateException e) {
+            log.error("납부 취소 실패: {}", e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body(RespDto.fail(e.getMessage()));
+            
+        } catch (Exception e) {
+            log.error("납부 취소 중 오류 발생", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespDto.fail("납부 취소 중 오류가 발생했습니다."));
+        }
+    }
+    
 }

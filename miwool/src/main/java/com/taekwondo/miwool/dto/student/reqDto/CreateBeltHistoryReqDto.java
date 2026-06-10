@@ -26,6 +26,7 @@ public class CreateBeltHistoryReqDto {
     @Min(value = 0, message = "경력개월수는 0 이상이어야 합니다")
     private Integer careerMonths;      // 경력개월수 (필수)
     
-    @NotBlank(message = "급수코드는 필수입니다")
     private String beltCode;           // 급수코드 (필수)
+    private String ropeBeltCode;       // 줄넘기 급수코드 (nullable)
+    private LocalDate promoDate;   // 승단예정일 (nullable)
 }

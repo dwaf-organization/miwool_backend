@@ -31,7 +31,7 @@ public class AdminIntegratedEducationService {
     
     // 교육지도 항목 8개
     private static final List<String> EDUCATION_ITEMS = Arrays.asList(
-        "전화", "문자", "손편지", "간식", "상장", "영상", "관찰지", "기타"
+        "전화", "문자", "손편지", "간식", "상장", "영상", "관찰지", "인바디", "기타"
     );
     
     @Transactional(readOnly = true)

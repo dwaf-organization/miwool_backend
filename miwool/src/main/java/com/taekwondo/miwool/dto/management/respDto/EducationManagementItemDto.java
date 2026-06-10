@@ -25,6 +25,7 @@ public class EducationManagementItemDto {
     private boolean videoYn;           // 영상
     private boolean awardYn;           // 상장
     private boolean observationYn;     // 관찰지
+    private boolean inbodyYn;          // 인바디
     private boolean etcYn;             // 기타
     private String etcContent;         // 기타내용 (note)
 }

@@ -71,12 +71,13 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     	    "    s.status_code, " +
     	    "    s.belt_code, " +
     	    "    s.regist_date, " +
-    	    "    s.deleted_at " +
+    	    "    s.deleted_at, " +
+    	    "    s.rope_belt_code " +
     	    "FROM student_mst s " +
     	    "WHERE s.dojang_code = :dojangCode " +
     	    "AND (:studentSearch IS NULL OR s.student_name LIKE CONCAT('%', :studentSearch, '%') OR s.student_code LIKE CONCAT('%', :studentSearch, '%')) " +
     	    "AND (:genderCode IS NULL OR s.gender_code = :genderCode) " +
-    	    "AND (:beltCode IS NULL OR s.belt_code = :beltCode) " +
+    	    "AND (:beltCode IS NULL OR s.belt_code = :beltCode OR s.rope_belt_code = :beltCode) " +
     	    "AND (:statusCode IS NULL OR s.status_code = :statusCode) " +
     	    "AND (:gradeCode IS NULL OR s.grade = :gradeCode) " +
     	    "ORDER BY s.regist_date DESC ",
@@ -99,7 +100,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     	    "WHERE s.dojang_code = :dojangCode " +
     	    "AND (:studentSearch IS NULL OR s.student_name LIKE CONCAT('%', :studentSearch, '%') OR s.student_code LIKE CONCAT('%', :studentSearch, '%')) " +
     	    "AND (:genderCode IS NULL OR s.gender_code = :genderCode) " +
-    	    "AND (:beltCode IS NULL OR s.belt_code = :beltCode) " +
+    	    "AND (:beltCode IS NULL OR s.belt_code = :beltCode OR s.rope_belt_code = :beltCode) " +
     	    "AND (:statusCode IS NULL OR s.status_code = :statusCode) " +
     	    "AND (:gradeCode IS NULL OR s.grade = :gradeCode)",
     	    nativeQuery = true)
@@ -125,15 +126,18 @@ public interface StudentRepository extends JpaRepository<Student, String> {
                    "    s.birth_date, " +
                    "    s.grade, " +
                    "    s.belt_code, " +
-                   "    c.code_name AS belt_name " +
+                   "    c.code_name AS belt_name, " +
+                   "    s.rope_belt_code, " +
+                   "    rc.code_name AS rope_belt_name " +
                    "FROM student_mst s " +
                    "LEFT JOIN common_mst c ON s.belt_code = c.common_code " +
+                   "LEFT JOIN common_mst rc ON s.rope_belt_code = rc.common_code " +
                    "WHERE s.dojang_code = :dojangCode " +
-                   "  AND s.status_code = '재원'  " +
+                   "  AND s.status_code IN ('재원', '복관') " +
                    "  AND (:studentSearch IS NULL " +
                    "       OR s.student_code LIKE CONCAT('%', :studentSearch, '%') " +
                    "       OR s.student_name LIKE CONCAT('%', :studentSearch, '%')) " +
-                   "  AND (:beltCode IS NULL OR s.belt_code = :beltCode) " +
+                   "  AND (:beltCode IS NULL OR s.belt_code = :beltCode OR s.rope_belt_code = :beltCode) " +
                    "  AND (:genderCode IS NULL OR s.gender_code = :genderCode) " +
                    "  AND (:grade IS NULL OR s.grade = :grade) " +
                    "ORDER BY s.student_name ASC",
@@ -192,7 +196,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     @Query(value = 
         "SELECT COUNT(*) FROM student_mst " +
         "WHERE dojang_code = :dojangCode " +
-        "AND status_code IN ('재원', '체험')",
+        "AND status_code IN ('재원', '체험', '복관')",
         nativeQuery = true)
     int countStatisticCurrentTotal(@Param("dojangCode") String dojangCode);
     
@@ -452,29 +456,29 @@ public interface StudentRepository extends JpaRepository<Student, String> {
      * 결과: [연령대, 인원수]
      */
     @Query(value = 
-        "SELECT " +
-        "    CASE " +
-        "        WHEN TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) BETWEEN 0 AND 7 THEN '유아' " +
-        "        WHEN TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) BETWEEN 8 AND 13 THEN '초등부' " +
-        "        WHEN TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) BETWEEN 14 AND 16 THEN '중등부' " +
-        "        WHEN TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) BETWEEN 17 AND 19 THEN '고등부' " +
-        "        ELSE '성인부' " +
-        "    END AS age_group, " +
-        "    COUNT(*) AS student_count " +
-        "FROM student_mst " +
-        "WHERE dojang_code = :dojangCode " +
-        "AND status_code = '재원' " +
-        "GROUP BY age_group " +
-        "ORDER BY " +
-        "    CASE age_group " +
-        "        WHEN '유아' THEN 1 " +
-        "        WHEN '초등부' THEN 2 " +
-        "        WHEN '중등부' THEN 3 " +
-        "        WHEN '고등부' THEN 4 " +
-        "        WHEN '성인부' THEN 5 " +
-        "    END",
-        nativeQuery = true)
-    List<Object[]> countByAgeGroup(@Param("dojangCode") String dojangCode);
+            "SELECT " +
+            "    CASE " +
+            "        WHEN (YEAR(CURDATE()) - YEAR(birth_date) + 1) BETWEEN 1 AND 7 THEN '유아부' " +
+            "        WHEN (YEAR(CURDATE()) - YEAR(birth_date) + 1) BETWEEN 8 AND 13 THEN '초등부' " +
+            "        WHEN (YEAR(CURDATE()) - YEAR(birth_date) + 1) BETWEEN 14 AND 16 THEN '중등부' " +
+            "        WHEN (YEAR(CURDATE()) - YEAR(birth_date) + 1) BETWEEN 17 AND 19 THEN '고등부' " +
+            "        ELSE '성인부' " +
+            "    END AS age_group, " +
+            "    COUNT(*) AS student_count " +
+            "FROM student_mst " +
+            "WHERE dojang_code = :dojangCode " +
+            "AND status_code IN ('재원', '복관') " +
+            "GROUP BY age_group " +
+            "ORDER BY " +
+            "    CASE age_group " +
+            "        WHEN '유아부' THEN 1 " +
+            "        WHEN '초등부' THEN 2 " +
+            "        WHEN '중등부' THEN 3 " +
+            "        WHEN '고등부' THEN 4 " +
+            "        WHEN '성인부' THEN 5 " +
+            "    END",
+            nativeQuery = true)
+        List<Object[]> countByAgeGroup(@Param("dojangCode") String dojangCode);
     
     /**
      * 알림 - 오늘 생일인 제자 조회
@@ -493,49 +497,51 @@ public interface StudentRepository extends JpaRepository<Student, String> {
      * 앱 제자 목록 조회 (동적 검색 + 페이징)
      * 결과: [제자코드, 제자명, 성별코드, 생년월일, 학년, 급수명, 연락처, 재원상태코드, 입관일, 퇴관일]
      */
-    @Query(value = 
-        "SELECT " +
-        "    s.student_code, " +
-        "    s.student_name, " +
-        "    s.gender_code, " +
-        "    s.birth_date, " +
-        "    s.grade, " +
-        "    c.code_name AS belt_name, " +
-        "    s.student_phone, " +
-        "    s.status_code, " +
-        "    s.regist_date, " +
-        "    s.deleted_at " +
-        "FROM student_mst s " +
-        "LEFT JOIN common_mst c ON s.belt_code = c.common_code " +
-        "WHERE s.dojang_code = :dojangCode " +
-        "AND (:studentSearch IS NULL OR :studentSearch = '' OR " +
-        "     s.student_name LIKE CONCAT('%', :studentSearch, '%') OR " +
-        "     s.student_code LIKE CONCAT('%', :studentSearch, '%')) " +
-        "AND (:grade = '전체' OR s.grade = :grade) " +
-        "AND (:genderCode = '전체' OR s.gender_code = :genderCode) " +
-        "AND (:beltCode = '전체' OR s.belt_code = :beltCode) " +
-        "AND (:statusCode = '전체' OR s.status_code = :statusCode) " +
-        "ORDER BY s.student_name ASC",
-        countQuery = 
-        "SELECT COUNT(*) " +
-        "FROM student_mst s " +
-        "WHERE s.dojang_code = :dojangCode " +
-        "AND (:studentSearch IS NULL OR :studentSearch = '' OR " +
-        "     s.student_name LIKE CONCAT('%', :studentSearch, '%') OR " +
-        "     s.student_code LIKE CONCAT('%', :studentSearch, '%')) " +
-        "AND (:grade = '전체' OR s.grade = :grade) " +
-        "AND (:genderCode = '전체' OR s.gender_code = :genderCode) " +
-        "AND (:beltCode = '전체' OR s.belt_code = :beltCode) " +
-        "AND (:statusCode = '전체' OR s.status_code = :statusCode)",
-        nativeQuery = true)
-    Page<Object[]> findStudentsForApp(
-        @Param("dojangCode") String dojangCode,
-        @Param("studentSearch") String studentSearch,
-        @Param("grade") String grade,
-        @Param("genderCode") String genderCode,
-        @Param("beltCode") String beltCode,
-        @Param("statusCode") String statusCode,
-        Pageable pageable);
+    @Query(value =
+            "SELECT " +
+            "    s.student_code, " +
+            "    s.student_name, " +
+            "    s.gender_code, " +
+            "    s.birth_date, " +
+            "    s.grade, " +
+            "    c.code_name AS belt_name, " +
+            "    s.student_phone, " +
+            "    s.status_code, " +
+            "    s.regist_date, " +
+            "    s.deleted_at, " +
+            "    s.rope_belt_code, " +
+            "    rc.code_name AS rope_belt_name " +
+            "FROM student_mst s " +
+            "LEFT JOIN common_mst c ON s.belt_code = c.common_code " +
+            "LEFT JOIN common_mst rc ON s.rope_belt_code = rc.common_code " +
+            "WHERE s.dojang_code = :dojangCode " +
+            "AND s.is_deleted = 0 " +
+            "AND (:studentSearch = '' OR s.student_name LIKE CONCAT('%', :studentSearch, '%') " +
+            "     OR s.student_code LIKE CONCAT('%', :studentSearch, '%')) " +
+            "AND (:grade = '전체' OR s.grade = :grade) " +
+            "AND (:genderCode = '전체' OR s.gender_code = :genderCode) " +
+            "AND (:beltCode = '전체' OR s.belt_code = :beltCode OR s.rope_belt_code = :beltCode) " +
+            "AND (:statusCode = '전체' OR s.status_code = :statusCode) " +
+            "ORDER BY s.student_name ASC",
+            countQuery =
+            "SELECT COUNT(*) FROM student_mst s " +
+            "WHERE s.dojang_code = :dojangCode " +
+            "AND s.is_deleted = 0 " +
+            "AND (:studentSearch = '' OR s.student_name LIKE CONCAT('%', :studentSearch, '%') " +
+            "     OR s.student_code LIKE CONCAT('%', :studentSearch, '%')) " +
+            "AND (:grade = '전체' OR s.grade = :grade) " +
+            "AND (:genderCode = '전체' OR s.gender_code = :genderCode) " +
+            "AND (:beltCode = '전체' OR s.belt_code = :beltCode OR s.rope_belt_code = :beltCode) " +
+            "AND (:statusCode = '전체' OR s.status_code = :statusCode)",
+            nativeQuery = true)
+        Page<Object[]> findStudentsForApp(
+                @Param("dojangCode") String dojangCode,
+                @Param("studentSearch") String studentSearch,
+                @Param("grade") String grade,
+                @Param("genderCode") String genderCode,
+                @Param("beltCode") String beltCode,
+                @Param("statusCode") String statusCode,
+                Pageable pageable);
 
     /**
      * 재원 + 체험 제자 수 조회
@@ -629,7 +635,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         SELECT s.birth_date
         FROM student_mst s
         WHERE s.dojang_code = :dojangCode
-          AND s.status_code = '재원'
+          AND s.status_code IN ('재원', '복관')
           AND s.is_deleted = 0
         """, nativeQuery = true)
     List<Object> findBirthDatesByDojang(@Param("dojangCode") String dojangCode);
@@ -654,6 +660,35 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         "WHERE status_code = :statusCode",
         nativeQuery = true)
     int countByStatusCode(@Param("statusCode") String statusCode);
+    
+    /**
+     * 특정 날짜 입관/퇴관/체험 제자 목록 (팝업용)
+     * (student_code, student_name, gender_code, birth_date, belt_code, belt_name, rope_belt_code, rope_belt_name)
+     */
+    @Query(value =
+        "SELECT " +
+        "    s.student_code, " +
+        "    s.student_name, " +
+        "    s.gender_code, " +
+        "    s.birth_date, " +
+        "    s.belt_code, " +
+        "    c.code_name AS belt_name, " +
+        "    s.rope_belt_code, " +
+        "    rc.code_name AS rope_belt_name " +
+        "FROM student_mst s " +
+        "JOIN student_status ss ON s.student_code = ss.student_code " +
+        "LEFT JOIN common_mst c ON s.belt_code = c.common_code " +
+        "LEFT JOIN common_mst rc ON s.rope_belt_code = rc.common_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.change_date = :date " +
+        "AND ss.status_code = :statusCode " +
+        "ORDER BY s.student_name",
+        nativeQuery = true)
+    List<Object[]> getStudentsByDateAndStatus(
+            @Param("dojangCode") String dojangCode,
+            @Param("date") LocalDate date,
+            @Param("statusCode") String statusCode);
+
     
     
 }

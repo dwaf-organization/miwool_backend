@@ -21,6 +21,8 @@ public class StudentListRespDto {
     private String grade;          // 학년 (초4, 중2 등)
     private String beltCode;       // 최신 급수 코드
     private String beltName;       // 최신 급수명
+    private String ropeBeltCode;      // 줄넘기 급수 코드
+    private String ropeBeltName;      // 줄넘기 급수명
     private LocalDate birthDate;   // 생년월일
     private String statusCode;     // 최신 재원상태 코드
     private LocalDate registDate;  // 입관일

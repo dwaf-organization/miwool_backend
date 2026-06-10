@@ -81,8 +81,9 @@ public class EducationManagementService {
                     boolean videoYn = ((Number) row[9]).intValue() > 0;
                     boolean awardYn = ((Number) row[10]).intValue() > 0;
                     boolean observationYn = ((Number) row[11]).intValue() > 0;
-                    boolean etcYn = ((Number) row[12]).intValue() > 0;
-                    String etcContent = (String) row[13];
+                    boolean inbodyYn      = ((Number) row[12]).intValue() > 0;
+                    boolean etcYn         = ((Number) row[13]).intValue() > 0;
+                    String etcContent     = (String) row[14];
                     
                     // 나이 계산
                     int age = AgeUtil.calculateKoreanAge(birthDate);
@@ -100,6 +101,7 @@ public class EducationManagementService {
                             .videoYn(videoYn)
                             .awardYn(awardYn)
                             .observationYn(observationYn)
+                            .inbodyYn(inbodyYn)
                             .etcYn(etcYn)
                             .etcContent(etcContent)
                             .build();
@@ -168,6 +170,7 @@ public class EducationManagementService {
             case "영상": return item.isVideoYn() == expected;
             case "상장": return item.isAwardYn() == expected;
             case "관찰지": return item.isObservationYn() == expected;
+            case "인바디": return item.isInbodyYn() == expected;
             case "기타": return item.isEtcYn() == expected;
             default: return true;
         }
@@ -294,6 +297,7 @@ public class EducationManagementService {
             case "video": return "영상";
             case "award": return "상장";
             case "observation": return "관찰지";
+            case "inbody": return "인바디";
             case "etc": return "기타";
             default: return null; // 알 수 없는 항목 무시
         }
@@ -375,6 +379,7 @@ public class EducationManagementService {
         items.add(buildDetailItem("video", "영상", existingMap));
         items.add(buildDetailItem("award", "상장", existingMap));
         items.add(buildDetailItem("observation", "관찰지", existingMap));
+        items.add(buildDetailItem("inbody",      "인바디", existingMap));
         items.add(buildDetailItem("etc", "기타", existingMap));
         
         // 4. 응답 생성

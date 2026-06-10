@@ -29,8 +29,8 @@ public class AlarmScheduler {
     /**
      * 매일 자정에 생일 및 기념일 알림 생성
      */
-//    @Scheduled(cron = "0 0 0 * * ?")
-    @Scheduled(cron = "0 15 9 * * *")
+    @Scheduled(cron = "0 0 0 * * ?")
+//    @Scheduled(cron = "0 15 9 * * *")
     public void createDailyAlarms() {
         log.info("일일 알림 생성 시작");
         
@@ -42,10 +42,10 @@ public class AlarmScheduler {
         createStudentBirthdayAlarms(month, day, today);
         
         // 2. 보호자 생일 알림
-        createGuardianBirthdayAlarms(month, day, today);
+//        createGuardianBirthdayAlarms(month, day, today);
         
         // 3. 결혼기념일 알림
-        createAnniversaryAlarms(month, day, today);
+//        createAnniversaryAlarms(month, day, today);
         
         log.info("일일 알림 생성 완료");
     }

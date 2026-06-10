@@ -18,4 +18,6 @@ public class StudentSelectionRespDto {
     private String grade;              // 학년 (초1, 초2, 초3, ...)
     private String beltCode;           // 급수코드
     private String beltName; // 급수명
+    private String ropeBeltCode;       // 줄넘기 급수코드
+    private String ropeBeltName;       // 줄넘기 급수명
 }

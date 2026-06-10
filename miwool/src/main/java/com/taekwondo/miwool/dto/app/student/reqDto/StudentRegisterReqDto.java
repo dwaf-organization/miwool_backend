@@ -27,6 +27,7 @@ public class StudentRegisterReqDto {
     
     // 급수 정보
     private String beltCode; // 급수코드
+    private String ropeBeltCode; // 줄넘기 급수코드
     private Integer taekwondoMonths; // 태권도 경력(개월)
     
     // 보호자 정보

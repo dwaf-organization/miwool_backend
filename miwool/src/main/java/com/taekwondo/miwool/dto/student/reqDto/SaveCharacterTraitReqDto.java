@@ -43,4 +43,8 @@ public class SaveCharacterTraitReqDto {
     
     private List<String> strength;                 // 강점 (STRENGTH)
     private String strengthEtc;                    // 강점 기타값
+    
+    private String skill;                          // 기능습득속도 (SKILL) 단일 선택
+    private String skillEtc;                       // 기능습득속도 기타값
+    
 }

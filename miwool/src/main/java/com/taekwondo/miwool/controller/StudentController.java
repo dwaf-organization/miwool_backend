@@ -6,9 +6,11 @@ import com.taekwondo.miwool.dto.student.reqDto.RegisterStudentReqDto;
 import com.taekwondo.miwool.dto.student.reqDto.SaveCharacterTraitReqDto;
 import com.taekwondo.miwool.dto.student.reqDto.StudentListReqDto;
 import com.taekwondo.miwool.dto.student.reqDto.UpdateStudentBasicInfoReqDto;
+import com.taekwondo.miwool.dto.student.reqDto.WithdrawalReqDto;
 import com.taekwondo.miwool.dto.student.respDto.BeltHistoryListRespDto;
 import com.taekwondo.miwool.dto.student.respDto.CharacterTraitInfoRespDto;
 import com.taekwondo.miwool.dto.student.respDto.RegisterStudentRespDto;
+import com.taekwondo.miwool.dto.student.respDto.StatusHistoryRespDto;
 import com.taekwondo.miwool.dto.student.respDto.StudentBasicInfoRespDto;
 import com.taekwondo.miwool.dto.student.respDto.StudentListRespDto;
 import com.taekwondo.miwool.service.StudentService;
@@ -365,6 +367,73 @@ public class StudentController {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(RespDto.fail("급수/경력 이력 삭제 중 오류가 발생했습니다."));
+        }
+    }
+    
+    /**
+     * 제자 퇴관 처리
+     * POST /api/v1/students/withdrawal
+     */
+    @PostMapping("/withdrawal")
+    public ResponseEntity<?> withdrawStudent(
+            @AuthenticationPrincipal String dojangCode,
+            @Valid @RequestBody WithdrawalReqDto reqDto,
+            BindingResult bindingResult) {
+        
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getAllErrors().get(0).getDefaultMessage();
+            return ResponseEntity
+                    .badRequest()
+                    .body(RespDto.fail(errorMessage));
+        }
+        
+        try {
+            studentService.withdrawStudent(dojangCode, reqDto);
+            
+            return ResponseEntity
+                    .ok()
+                    .body(RespDto.success("퇴관 처리가 완료되었습니다.", null));
+            
+        } catch (IllegalArgumentException e) {
+            log.error("퇴관 처리 실패: {}", e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body(RespDto.fail(e.getMessage()));
+            
+        } catch (Exception e) {
+            log.error("퇴관 처리 중 오류 발생", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespDto.fail("퇴관 처리 중 오류가 발생했습니다."));
+        }
+    }
+    
+    /**
+     * 제자 재원이력 조회
+     * GET /api/v1/students/status-history?studentCode={studentCode}
+     */
+    @GetMapping("/status-history")
+    public ResponseEntity<?> getStatusHistory(
+            @RequestParam("studentCode") String studentCode) {
+        
+        try {
+            StatusHistoryRespDto respDto = studentService.getStatusHistory(studentCode);
+            
+            return ResponseEntity
+                    .ok()
+                    .body(RespDto.success("재원이력을 조회했습니다.", respDto));
+            
+        } catch (IllegalArgumentException e) {
+            log.error("재원이력 조회 실패: {}", e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body(RespDto.fail(e.getMessage()));
+            
+        } catch (Exception e) {
+            log.error("재원이력 조회 중 오류 발생", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespDto.fail("재원이력 조회 중 오류가 발생했습니다."));
         }
     }
     

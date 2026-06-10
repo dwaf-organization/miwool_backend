@@ -35,6 +35,12 @@ public class Activity {
     @Column(name = "activity_type", length = 50)
     private String activityType; // 활동유형
     
+    @Column(name = "activity_area", length = 50)
+    private String activityArea; // 활동지역
+    
+    @Column(name = "activity_manager", length = 50)
+    private String activityManager; // 활동담당자
+    
     @Column(name = "description", columnDefinition = "TEXT")
     private String description; // 설명
     

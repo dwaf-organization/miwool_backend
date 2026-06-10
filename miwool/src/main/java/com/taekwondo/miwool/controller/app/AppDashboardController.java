@@ -4,6 +4,7 @@ import com.taekwondo.miwool.common.dto.RespDto;
 import com.taekwondo.miwool.dto.app.dashboard.respDto.DashboardRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.CalendarRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.DailyRespDto;
+import com.taekwondo.miwool.dto.dashboard.respDto.PopupRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.SummaryTabRespDto;
 import com.taekwondo.miwool.dto.dashboard.respDto.WeeklyRespDto;
 import com.taekwondo.miwool.service.app.AppDashboardService;
@@ -125,4 +126,26 @@ public class AppDashboardController {
                     .body(RespDto.fail("요약 데이터 조회 중 오류가 발생했습니다."));
         }
     }
+    
+    // 앱 달력 팝업 데이터 조회
+    @GetMapping("/calendar/popup")
+    public ResponseEntity<?> getCalendarPopup(
+            @RequestParam(value = "dojangCode", required = true) String dojangCode,
+            @RequestParam(value = "date", required = true) String date) {
+        
+        try {
+            PopupRespDto respDto = appDashboardService.getPopupData(dojangCode, date);
+            
+            return ResponseEntity
+                    .ok()
+                    .body(RespDto.success("팝업 데이터를 조회했습니다.", respDto));
+            
+        } catch (Exception e) {
+            log.error("앱 달력 팝업 데이터 조회 중 오류 발생", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespDto.fail("팝업 데이터 조회 중 오류가 발생했습니다."));
+        }
+    }
+    
 }

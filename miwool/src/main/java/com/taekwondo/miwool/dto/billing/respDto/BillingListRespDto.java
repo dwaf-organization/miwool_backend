@@ -26,4 +26,8 @@ public class BillingListRespDto {
     private LocalDate billingDate; // 청구일
     private String billingStatus; // 납부상태
     private LocalDateTime paidAt; // 납부처리일
+    private String paymentMethod; // 납부방법
+    private Integer actualPaymentAmount; // 실제납부금액
+    private String receiptPhone; // 현금영수증 전화번호
+    private String note; // 납부금액 변경 사유
 }

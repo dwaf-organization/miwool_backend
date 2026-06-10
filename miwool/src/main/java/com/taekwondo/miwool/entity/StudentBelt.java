@@ -25,14 +25,20 @@ public class StudentBelt {
     @Column(name = "student_code", length = 20, nullable = false)
     private String studentCode;  // 제자코드
     
-    @Column(name = "belt_code", length = 20, nullable = false)
+    @Column(name = "belt_code", length = 20)
     private String beltCode;  // 등급 (공통코드)
+    
+    @Column(name = "rope_belt_code", length = 20)
+    private String ropeBeltCode;  // 줄넘기 등급 (공통코드)
     
     @Column(name = "taekwondo_months")
     private Integer taekwondoMonths;  // 경력 (개월수)
     
     @Column(name = "acquired_at", nullable = false)
     private LocalDate acquiredAt;  // 취득일
+    
+    @Column(name = "promo_date")
+    private LocalDate promoDate;  // 승단예정일
     
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

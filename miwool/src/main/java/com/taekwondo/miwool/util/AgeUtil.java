@@ -27,35 +27,26 @@ public class AgeUtil {
     public static String calculateGrade(LocalDate birthDate) {
         int age = calculateKoreanAge(birthDate);
         
-        if (age <= 7) {
-            return "유아";
-        } else if (age == 8) {
-            return "초1";
-        } else if (age == 9) {
-            return "초2";
-        } else if (age == 10) {
-            return "초3";
-        } else if (age == 11) {
-            return "초4";
-        } else if (age == 12) {
-            return "초5";
-        } else if (age == 13) {
-            return "초6";
-        } else if (age == 14) {
-            return "중1";
-        } else if (age == 15) {
-            return "중2";
-        } else if (age == 16) {
-            return "중3";
-        } else if (age == 17) {
-            return "고1";
-        } else if (age == 18) {
-            return "고2";
-        } else if (age == 19) {
-            return "고3";
-        } else {
-            return "성인";
-        }
+        if (age == 1) return "1세";
+        if (age == 2) return "2세";
+        if (age == 3) return "3세";
+        if (age == 4) return "4세";
+        if (age == 5) return "5세";
+        if (age == 6) return "6세";
+        if (age == 7) return "7세";
+        if (age == 8) return "초1";
+        if (age == 9) return "초2";
+        if (age == 10) return "초3";
+        if (age == 11) return "초4";
+        if (age == 12) return "초5";
+        if (age == 13) return "초6";
+        if (age == 14) return "중1";
+        if (age == 15) return "중2";
+        if (age == 16) return "중3";
+        if (age == 17) return "고1";
+        if (age == 18) return "고2";
+        if (age == 19) return "고3";
+        return "성인";
     }
     
     /**
@@ -67,7 +58,13 @@ public class AgeUtil {
         }
         
         switch (gradeCode) {
-            case "유아": return null;  // 0-7세 범위
+            case "1세": return 1;
+            case "2세": return 2;
+            case "3세": return 3;
+            case "4세": return 4;
+            case "5세": return 5;
+            case "6세": return 6;
+            case "7세": return 7;
             case "초1": return 8;
             case "초2": return 9;
             case "초3": return 10;
@@ -80,7 +77,7 @@ public class AgeUtil {
             case "고1": return 17;
             case "고2": return 18;
             case "고3": return 19;
-            case "성인": return 20;  // 20세 이상
+            case "성인": return 20;
             default: return null;
         }
     }
@@ -95,13 +92,11 @@ public class AgeUtil {
         
         int age = calculateKoreanAge(birthDate);
         
-        if ("유아".equals(gradeCode)) {
-            return age <= 7;
-        } else if ("성인".equals(gradeCode)) {
+        if ("성인".equals(gradeCode)) {
             return age >= 20;
-        } else {
-            Integer targetAge = getAgeByGrade(gradeCode);
-            return targetAge != null && age == targetAge;
         }
+        
+        Integer targetAge = getAgeByGrade(gradeCode);
+        return targetAge != null && age == targetAge;
     }
 }

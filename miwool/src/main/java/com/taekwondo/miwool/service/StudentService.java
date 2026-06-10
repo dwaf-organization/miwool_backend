@@ -5,10 +5,12 @@ import com.taekwondo.miwool.dto.student.reqDto.RegisterStudentReqDto;
 import com.taekwondo.miwool.dto.student.reqDto.SaveCharacterTraitReqDto;
 import com.taekwondo.miwool.dto.student.reqDto.StudentListReqDto;
 import com.taekwondo.miwool.dto.student.reqDto.UpdateStudentBasicInfoReqDto;
+import com.taekwondo.miwool.dto.student.reqDto.WithdrawalReqDto;
 import com.taekwondo.miwool.dto.student.respDto.BeltHistoryItemDto;
 import com.taekwondo.miwool.dto.student.respDto.BeltHistoryListRespDto;
 import com.taekwondo.miwool.dto.student.respDto.CharacterTraitInfoRespDto;
 import com.taekwondo.miwool.dto.student.respDto.RegisterStudentRespDto;
+import com.taekwondo.miwool.dto.student.respDto.StatusHistoryRespDto;
 import com.taekwondo.miwool.dto.student.respDto.StudentBasicInfoRespDto;
 import com.taekwondo.miwool.dto.student.respDto.StudentListRespDto;
 import com.taekwondo.miwool.entity.*;
@@ -50,6 +52,7 @@ public class StudentService {
     private final StudentBodyPartRepository studentBodyPartRepository;
     private final StudentImprovementRepository studentImprovementRepository;
     private final StudentStrengthRepository studentStrengthRepository;
+    private final StudentSkillRepository studentSkillRepository;
     
     /**
      * 제자 등록 (Step 1)
@@ -83,6 +86,7 @@ public class StudentService {
                 .className(reqDto.getClassName())
                 .statusCode("재원")
                 .beltCode(reqDto.getBeltCode())
+                .ropeBeltCode(reqDto.getRopeBeltCode())
                 .registPathCode(reqDto.getRegistPathCode())
                 .registReason(reqDto.getRegistReason())
                 .hasExerciseHistory(reqDto.getHasExerciseHistory())
@@ -90,6 +94,7 @@ public class StudentService {
                 .previousDojangExp(reqDto.getPreviousDojangExp())
                 .hasMedication(reqDto.getHasMedication())
                 .hasAllergy(reqDto.getHasAllergy())
+                .hasSurgery(reqDto.getHasSurgery())
                 .healthNote(reqDto.getHealthNote())
                 .isDeleted(0)
                 .build();
@@ -126,6 +131,7 @@ public class StudentService {
                 .beltHistoryCode(beltHistoryCode)
                 .studentCode(studentCode)
                 .beltCode(reqDto.getBeltCode())
+                .ropeBeltCode(reqDto.getRopeBeltCode())
                 .taekwondoMonths(reqDto.getTaekwondoMonths() != null ? reqDto.getTaekwondoMonths() : 0)
                 .acquiredAt(reqDto.getRegistDate())
                 .build();
@@ -312,6 +318,7 @@ public class StudentService {
             String gradeFromDb = (String) row[5];
             String statusCode = (String) row[6];
             String beltCode = (String) row[7];
+            String ropeBeltCode = (String) row[10];
             java.sql.Date registDateSql = (java.sql.Date) row[8];
             LocalDate registDate = registDateSql.toLocalDate();
             
@@ -324,6 +331,11 @@ public class StudentService {
             // 급수명 조회
             String beltName = beltCode != null 
                     ? commonCodeRepository.findById(beltCode).map(CommonCode::getCodeName).orElse(beltCode)
+                    : "";
+            
+            // 줄넘기 급수명 조회
+            String ropeBeltName = ropeBeltCode != null 
+                    ? commonCodeRepository.findById(ropeBeltCode).map(CommonCode::getCodeName).orElse(ropeBeltCode)
                     : "";
             
             // 퇴관일 (퇴관 상태인 경우만 student_status에서 조회)
@@ -341,6 +353,8 @@ public class StudentService {
                     .grade(grade)
                     .beltCode(beltCode)
                     .beltName(beltName)
+                    .ropeBeltCode(ropeBeltCode)
+                    .ropeBeltName(ropeBeltName)
                     .birthDate(birthDate)
                     .statusCode(statusCode)
                     .registDate(registDate)
@@ -422,6 +436,7 @@ public class StudentService {
                 .registDate(student.getRegistDate())
                 .statusCode(student.getStatusCode())
                 .beltCode(student.getBeltCode())
+                .ropeBeltCode(student.getRopeBeltCode())
                 .profileImage(student.getProfileImageUrl())  // profileImageUrl로 수정
                 .birthDate(student.getBirthDate())
                 .genderCode(student.getGenderCode())
@@ -443,6 +458,7 @@ public class StudentService {
                 .previousDojangExp(student.getPreviousDojangExp())
                 .hasMedication(student.getHasMedication())
                 .hasAllergy(student.getHasAllergy())
+                .hasSurgery(student.getHasSurgery())
                 .healthNote(student.getHealthNote())
                 .guardian(guardianInfo)
                 .build();
@@ -473,22 +489,26 @@ public class StudentService {
         Integer currentMonths = latestBelt != null ? latestBelt.getTaekwondoMonths() : null;
         Integer newMonths = reqDto.getTaekwondoMonths();
         
-        boolean beltChanged = !student.getBeltCode().equals(reqDto.getBeltCode());
+        boolean beltChanged = !java.util.Objects.equals(student.getBeltCode(), reqDto.getBeltCode());
+        boolean ropeBeltChanged = !java.util.Objects.equals(student.getRopeBeltCode(), reqDto.getRopeBeltCode());
+        
         boolean monthsChanged = !java.util.Objects.equals(currentMonths, newMonths);
         
-        // 급수 또는 경력이 변경되었으면 이력 추가
-        if (beltChanged || monthsChanged) {
+        if (beltChanged || ropeBeltChanged || monthsChanged) {
             String beltHistoryCode = generateBeltHistoryCode(dojangCode);
             StudentBelt studentBelt = StudentBelt.builder()
                     .beltHistoryCode(beltHistoryCode)
                     .studentCode(reqDto.getStudentCode())
                     .beltCode(reqDto.getBeltCode())
+                    .ropeBeltCode(reqDto.getRopeBeltCode())  // ← 추가!
                     .taekwondoMonths(newMonths != null ? newMonths : 0)
                     .acquiredAt(LocalDate.now())
                     .build();
             studentBeltRepository.save(studentBelt);
-            log.info("급수/경력 변경 이력 추가: 급수[{} → {}], 경력[{}개월 → {}개월]", 
-                    student.getBeltCode(), reqDto.getBeltCode(), currentMonths, newMonths);
+            log.info("급수/경력 변경 이력 추가: 태권도[{} → {}], 줄넘기[{} → {}], 경력[{}개월 → {}개월]",
+                    student.getBeltCode(), reqDto.getBeltCode(),
+                    student.getRopeBeltCode(), reqDto.getRopeBeltCode(),  // ← 추가!
+                    currentMonths, newMonths);
         }
         
         // 3. 재원상태 변경 감지 및 이력 추가
@@ -502,7 +522,7 @@ public class StudentService {
                     .studentCode(reqDto.getStudentCode())
                     .statusCode(reqDto.getStatusCode())
                     .changeDate(changeDate)
-                    .statusReason(null)  // 사유 없이 저장
+                    .statusReason(reqDto.getStatusChangeReason())  // 사유 없이 저장
                     .build();
             studentStatusRepository.save(studentStatus);
             log.info("재원상태 변경 이력 추가: {} → {}", student.getStatusCode(), reqDto.getStatusCode());
@@ -510,6 +530,8 @@ public class StudentService {
             // 퇴관 처리
             if ("퇴관".equals(reqDto.getStatusCode())) {
                 handleStudentWithdrawal(reqDto.getStudentCode());
+            } else if ("휴관".equals(reqDto.getStatusCode())) {  // ← 추가!
+                handleStudentSuspension(reqDto.getStudentCode(), changeDate);
             }
         }
         
@@ -519,6 +541,7 @@ public class StudentService {
         student.setRegistDate(reqDto.getRegistDate());
         student.setStatusCode(reqDto.getStatusCode());
         student.setBeltCode(reqDto.getBeltCode());
+        student.setRopeBeltCode(reqDto.getRopeBeltCode());
         student.setProfileImageUrl(reqDto.getProfileImage());
         
         student.setBirthDate(reqDto.getBirthDate());
@@ -543,6 +566,7 @@ public class StudentService {
         
         student.setHasMedication(reqDto.getHasMedication());
         student.setHasAllergy(reqDto.getHasAllergy());
+        student.setHasSurgery(reqDto.getHasSurgery());
         student.setHealthNote(reqDto.getHealthNote());
         
         studentRepository.save(student);
@@ -604,6 +628,25 @@ public class StudentService {
         log.info("제자 교육비정보 삭제 완료: {}건", deletedTuitions);
         
         log.info("퇴관 처리 완료: studentCode={}", studentCode);
+    }
+    
+    /**
+     * 휴관 처리
+     * 1. student_training.end_date → 휴관일로 업데이트
+     * 2. student_class.end_date → 휴관일로 업데이트
+     */
+    private void handleStudentSuspension(String studentCode, LocalDate suspensionDate) {
+        log.info("휴관 처리 시작: studentCode={}", studentCode);
+        
+        // 1. student_training end_date 업데이트
+        int updatedTrainings = studentTrainingRepository.updateEndDateByStudentCode(studentCode, suspensionDate);
+        log.info("수련정보 종료일 업데이트 완료: {}건", updatedTrainings);
+        
+        // 2. student_class end_date 업데이트
+        int updatedClasses = studentClassRepository.updateEndDateByStudentCode(studentCode, suspensionDate);
+        log.info("수업정보 종료일 업데이트 완료: {}건", updatedClasses);
+        
+        log.info("휴관 처리 완료: studentCode={}", studentCode);
     }
     
     /**
@@ -710,6 +753,14 @@ public class StudentService {
             .map(StudentStrength::getEtcValue)
             .orElse(null);
         
+        String skill = null;
+        String skillEtc = null;
+        Optional<StudentSkill> studentSkill = studentSkillRepository.findByStudentCode(studentCode);
+        if (studentSkill.isPresent()) {
+            skill = studentSkill.get().getSkillCode();
+            skillEtc = studentSkill.get().getEtcValue();
+        }
+        
         // 3. DTO 생성
         CharacterTraitInfoRespDto respDto = CharacterTraitInfoRespDto.builder()
                 .studentCode(studentCode)
@@ -731,6 +782,8 @@ public class StudentService {
                 .changeNeedEtc(changeNeedEtc)
                 .strength(strength)
                 .strengthEtc(strengthEtc)
+                .skill(skill)
+                .skillEtc(skillEtc)
                 .build();
         
         log.info("제자 성향 정보 조회 완료: studentCode={}", studentCode);
@@ -763,6 +816,7 @@ public class StudentService {
         studentBodyPartRepository.deleteByStudentCode(studentCode);
         studentImprovementRepository.deleteByStudentCode(studentCode);
         studentStrengthRepository.deleteByStudentCode(studentCode);
+        studentSkillRepository.deleteByStudentCode(reqDto.getStudentCode());
         
         log.info("기존 성향 데이터 삭제 완료: studentCode={}", studentCode);
         
@@ -875,6 +929,16 @@ public class StudentService {
                 studentStrengthRepository.save(entity);
             }
         }
+        // 기능습득속도 저장 (단일 선택 - 기존 삭제 후 재저장)
+        if (reqDto.getSkill() != null && !reqDto.getSkill().isEmpty()) {
+            StudentSkill studentSkill = StudentSkill.builder()
+                    .studentCode(reqDto.getStudentCode())
+                    .skillCode(reqDto.getSkill())
+                    .etcValue("SKILL_999".equals(reqDto.getSkill()) ? reqDto.getSkillEtc() : null)
+                    .build();
+            studentSkillRepository.save(studentSkill);
+        }
+        
         
         log.info("제자 성향 정보 저장 완료: studentCode={}", studentCode);
     }
@@ -883,61 +947,86 @@ public class StudentService {
      * 급수/경력 이력 조회
      */
     public BeltHistoryListRespDto getBeltHistory(String studentCode) {
-        
+
         log.info("급수/경력 이력 조회 시작: studentCode={}", studentCode);
-        
+
         // 1. 제자 조회 (현재 급수 가져오기)
         Student student = studentRepository.findById(studentCode)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 제자입니다: " + studentCode));
-        
+
         // 2. 이력 목록 조회 (최신순)
         List<StudentBelt> beltHistories = studentBeltRepository
                 .findByStudentCodeOrderByAcquiredAtDesc(studentCode);
-        
-        // 3. 모든 급수 코드 수집
-        Set<String> beltCodes = beltHistories.stream()
-                .map(StudentBelt::getBeltCode)
-                .collect(Collectors.toSet());
-        if (student.getBeltCode() != null) {
-            beltCodes.add(student.getBeltCode());
+
+        // 3. 모든 급수 코드 수집 (태권도 + 줄넘기 모두)
+        Set<String> beltCodes = new HashSet<>();
+        for (StudentBelt h : beltHistories) {
+            if (h.getBeltCode() != null) beltCodes.add(h.getBeltCode());
+            if (h.getRopeBeltCode() != null) beltCodes.add(h.getRopeBeltCode());
         }
-        
-        // 4. 급수명 조회 (한 번에)
+        if (student.getBeltCode() != null) beltCodes.add(student.getBeltCode());
+        if (student.getRopeBeltCode() != null) beltCodes.add(student.getRopeBeltCode());
+
+        // 4. 급수명 조회 (BELT 그룹코드로 태권도 + 줄넘기 모두 조회 가능)
         Map<String, String> beltNameMap = new HashMap<>();
         if (!beltCodes.isEmpty()) {
             List<CommonCode> commonCodes = commonCodeRepository
                     .findByGroupCodeAndCommonCodeIn("BELT", new ArrayList<>(beltCodes));
-            
+
             beltNameMap = commonCodes.stream()
                     .collect(Collectors.toMap(
                         CommonCode::getCommonCode,
                         CommonCode::getCodeName
                     ));
         }
-        
+
         // 5. DTO 변환
         final Map<String, String> finalBeltNameMap = beltNameMap;
         List<BeltHistoryItemDto> histories = beltHistories.stream()
-                .map((StudentBelt history) -> BeltHistoryItemDto.builder()
+                .map(history -> BeltHistoryItemDto.builder()
                         .historyCode(history.getBeltHistoryCode())
                         .beltCode(history.getBeltCode())
-                        .beltName(finalBeltNameMap.getOrDefault(history.getBeltCode(), ""))
+                        .beltName(history.getBeltCode() != null
+                                ? finalBeltNameMap.getOrDefault(history.getBeltCode(), "")
+                                : "")
+                        .ropeBeltCode(history.getRopeBeltCode())
+                        .ropeBeltName(history.getRopeBeltCode() != null
+                                ? finalBeltNameMap.getOrDefault(history.getRopeBeltCode(), "")
+                                : "")
                         .careerMonths(history.getTaekwondoMonths())
                         .changeDate(history.getAcquiredAt())
+                        .promoDate(history.getPromoDate())
                         .build())
                 .collect(Collectors.toList());
-        
+
         // 6. 현재 경력 = 가장 최신 이력의 경력개월수
         int currentCareer = beltHistories.isEmpty() ? 0 : beltHistories.get(0).getTaekwondoMonths();
+ 
+        // 7. 현재 급수 = 가장 최신 이력 기준 (null 가능)  ← 수정!
+        String currentBelt = null;
+        String currentBeltName = null;
+        String currentRopeBelt = null;
+        String currentRopeBeltName = null;
         
-        // 7. 현재 급수명
-        String currentBeltName = finalBeltNameMap.getOrDefault(student.getBeltCode(), "");
-        
+        if (!beltHistories.isEmpty()) {
+            StudentBelt latest = beltHistories.get(0);
+            currentBelt = latest.getBeltCode();
+            currentBeltName = currentBelt != null
+                    ? finalBeltNameMap.getOrDefault(currentBelt, "")
+                    : null;
+            currentRopeBelt = latest.getRopeBeltCode();
+            currentRopeBeltName = currentRopeBelt != null
+                    ? finalBeltNameMap.getOrDefault(currentRopeBelt, "")
+                    : null;
+        }
+ 
         log.info("급수/경력 이력 조회 완료: studentCode={}, 이력 건수={}", studentCode, histories.size());
-        
+ 
         return BeltHistoryListRespDto.builder()
-                .currentBelt(student.getBeltCode())
+                .currentBelt(currentBelt)
                 .currentBeltName(currentBeltName)
+                .currentRopeBelt(currentRopeBelt)
+                .currentRopeBeltName(currentRopeBeltName)
                 .currentCareer(currentCareer)
                 .histories(histories)
                 .build();
@@ -951,26 +1040,34 @@ public class StudentService {
         
         log.info("급수/경력 이력 등록 시작: studentCode={}", reqDto.getStudentCode());
         
+        // 둘 다 null이면 예외
+        if (reqDto.getBeltCode() == null && reqDto.getRopeBeltCode() == null) {
+            throw new IllegalArgumentException("태권도 급수 또는 줄넘기 급수 중 하나는 필수입니다.");
+        }
+        
         // 1. 제자 존재 확인
         Student student = studentRepository.findById(reqDto.getStudentCode())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 제자입니다: " + reqDto.getStudentCode()));
         
-        // 2. historyCode 자동 생성 (도장코드-BH{YYnnn})
+        // 2. historyCode 자동 생성
         String historyCode = generateBeltHistoryCode(dojangCode);
         
         // 3. StudentBelt 이력 추가
         StudentBelt studentBelt = StudentBelt.builder()
                 .beltHistoryCode(historyCode)
                 .studentCode(reqDto.getStudentCode())
-                .beltCode(reqDto.getBeltCode())
+                .beltCode(reqDto.getBeltCode())           // null 가능
+                .ropeBeltCode(reqDto.getRopeBeltCode())   // null 가능
                 .taekwondoMonths(reqDto.getCareerMonths())
                 .acquiredAt(reqDto.getChangeDate())
+                .promoDate(reqDto.getPromoDate())
                 .build();
         
         studentBeltRepository.save(studentBelt);
         
-        // 4. Student 테이블의 현재 급수 업데이트
+        // 4. Student 현재 띠 업데이트 (null이어도 그대로 저장)
         student.setBeltCode(reqDto.getBeltCode());
+        student.setRopeBeltCode(reqDto.getRopeBeltCode());
         studentRepository.save(student);
         
         log.info("급수/경력 이력 등록 완료: historyCode={}", historyCode);
@@ -992,6 +1089,77 @@ public class StudentService {
         studentBeltRepository.delete(studentBelt);
         
         log.info("급수/경력 이력 삭제 완료: historyCode={}", historyCode);
+    }
+    
+    /**
+     * 제자 퇴관 처리
+     */
+    @Transactional
+    public void withdrawStudent(String dojangCode, WithdrawalReqDto reqDto) {
+        log.info("퇴관 처리 시작: studentCode={}", reqDto.getStudentCode());
+        
+        // 1. 제자 조회
+        Student student = studentRepository.findById(reqDto.getStudentCode())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 제자입니다: " + reqDto.getStudentCode()));
+        
+        // 2. 이미 퇴관 상태면 예외
+        if ("퇴관".equals(student.getStatusCode())) {
+            throw new IllegalArgumentException("이미 퇴관 처리된 제자입니다.");
+        }
+        
+        // 3. student_status 이력 저장
+        String statusHistoryCode = generateStatusHistoryCode(dojangCode);
+        LocalDate changeDate = reqDto.getWithdrawalDate() != null ? reqDto.getWithdrawalDate() : LocalDate.now();
+        
+        StudentStatus studentStatus = StudentStatus.builder()
+                .statusHistoryCode(statusHistoryCode)
+                .studentCode(reqDto.getStudentCode())
+                .statusCode("퇴관")
+                .changeDate(changeDate)
+                .statusReason(reqDto.getWithdrawalReason())  // null이면 null 저장
+                .build();
+        studentStatusRepository.save(studentStatus);
+        
+        // 4. 제자 상태 업데이트
+        student.setStatusCode("퇴관");
+        studentRepository.save(student);
+        
+        // 5. 퇴관 후처리 (미납청구서 삭제, 수련/수업/교육비 정보 삭제)
+        handleStudentWithdrawal(reqDto.getStudentCode());
+        
+        log.info("퇴관 처리 완료: studentCode={}", reqDto.getStudentCode());
+    }
+    
+    /**
+     * 제자 재원이력 조회
+     */
+    @Transactional(readOnly = true)
+    public StatusHistoryRespDto getStatusHistory(String studentCode) {
+        log.info("재원이력 조회 시작: studentCode={}", studentCode);
+        
+        // 제자 존재 확인
+        studentRepository.findById(studentCode)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 제자입니다: " + studentCode));
+        
+        // 이력 조회 (날짜 내림차순)
+        List<StudentStatus> histories = studentStatusRepository
+                .findByStudentCodeOrderByChangeDateDescCreatedAtDesc(studentCode);
+        
+        List<StatusHistoryRespDto.StatusHistoryItemDto> items = histories.stream()
+                .map(h -> StatusHistoryRespDto.StatusHistoryItemDto.builder()
+                        .statusHistoryCode(h.getStatusHistoryCode())
+                        .statusCode(h.getStatusCode())
+                        .changeDate(h.getChangeDate())
+                        .statusReason(h.getStatusReason())
+                        .note(h.getNote())
+                        .build())
+                .collect(Collectors.toList());
+        
+        log.info("재원이력 조회 완료: studentCode={}, 건수={}", studentCode, items.size());
+        
+        return StatusHistoryRespDto.builder()
+                .histories(items)
+                .build();
     }
     
 }

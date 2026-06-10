@@ -36,6 +36,7 @@ public class CalendarRespDto {
         private Integer enrollment; // 입관 +n
         private Integer withdrawal; // 퇴관 +n
         private Integer trial; // 체험 +n
+        private Integer promotion; // 승단예정 +n
         private Integer paidAmount; // 납부완료 금액
     }
 }
