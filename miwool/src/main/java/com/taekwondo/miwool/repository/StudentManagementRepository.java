@@ -141,7 +141,7 @@ public interface StudentManagementRepository extends JpaRepository<StudentManage
         "AND s.status_code = '재원' " +
         "AND sm.student_code IS NULL " +
         "ORDER BY s.student_name " +
-        "LIMIT 10",
+        "LIMIT 16",
         nativeQuery = true)
     List<Object[]> getNotCompletedByType(
         @Param("dojangCode") String dojangCode,

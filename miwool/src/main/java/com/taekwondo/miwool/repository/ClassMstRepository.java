@@ -56,7 +56,7 @@ public interface ClassMstRepository extends JpaRepository<ClassMst, String> {
             @Param("dayOfWeek") String dayOfWeek);
         
         
-        @Query(value = """
+    	@Query(value = """
             SELECT 
                 s.gender_code,
                 s.student_name,
@@ -64,6 +64,8 @@ public interface ClassMstRepository extends JpaRepository<ClassMst, String> {
                 s.grade,
                 s.belt_code,
                 c.code_name as belt_name,
+                s.rope_belt_code,
+                rc.code_name as rope_belt_name,
                 g.guardian_phone,
                 s.student_phone,
                 st.use_vehicle,
@@ -74,6 +76,7 @@ public interface ClassMstRepository extends JpaRepository<ClassMst, String> {
             INNER JOIN student_mst s ON sc.student_code = s.student_code
             INNER JOIN student_training st ON sc.training_info_code = st.training_info_code
             LEFT JOIN common_mst c ON s.belt_code = c.common_code
+            LEFT JOIN common_mst rc ON s.rope_belt_code = rc.common_code
             LEFT JOIN (
                 SELECT sg.student_code, sg.guardian_code
                 FROM student_guardian sg

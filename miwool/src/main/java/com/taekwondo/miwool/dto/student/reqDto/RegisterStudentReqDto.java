@@ -46,7 +46,6 @@ public class RegisterStudentReqDto {
     private String studentAdd;  // 주소
     private String studentAdd2;  // 상세주소
     
-    @NotBlank(message = "학교명은 필수입니다")
     private String schoolName;  // 학교명
     
     private String grade;  // 학년

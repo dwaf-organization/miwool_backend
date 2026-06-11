@@ -97,7 +97,9 @@ public interface MonthlyBillingRepository extends JpaRepository<MonthlyBilling, 
             "    s.grade, " +
             "    s.belt_code, " +
             "    c.code_name AS belt_name, " +
-            "    mb.billing_code, " +
+            "    s.rope_belt_code, " +                            // ← 추가! row[7]
+            "    rc.code_name AS rope_belt_name, " +             // ← 추가! row[8]
+            "    mb.billing_code, " +                            // 기존 row[7] → row[9]
             "    mb.billing_amount, " +
             "    mb.billing_date, " +
             "    mb.billing_status, " +
@@ -109,6 +111,7 @@ public interface MonthlyBillingRepository extends JpaRepository<MonthlyBilling, 
             "FROM monthly_billing mb " +
             "INNER JOIN student_mst s ON mb.student_code = s.student_code " +
             "LEFT JOIN common_mst c ON s.belt_code = c.common_code " +
+            "LEFT JOIN common_mst rc ON s.rope_belt_code = rc.common_code " +  // ← 추가!
             "LEFT JOIN tuition_payment tp ON mb.billing_code = tp.billing_code " +
             "WHERE s.dojang_code = :dojangCode " +
             "AND (:studentSearch IS NULL " +
@@ -119,12 +122,12 @@ public interface MonthlyBillingRepository extends JpaRepository<MonthlyBilling, 
             "AND (:endDate IS NULL OR mb.billing_date <= :endDate) " +
             "ORDER BY mb.billing_date DESC, s.student_name ASC",
             nativeQuery = true)
-        List<Object[]> searchBillingList(
-                @Param("dojangCode") String dojangCode,
-                @Param("studentSearch") String studentSearch,
-                @Param("billingStatus") String billingStatus,
-                @Param("startDate") LocalDate startDate,
-                @Param("endDate") LocalDate endDate);
+    List<Object[]> searchBillingList(
+            @Param("dojangCode") String dojangCode,
+            @Param("studentSearch") String studentSearch,
+            @Param("billingStatus") String billingStatus,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
     
     /**
      * 대시보드 - 일별 납부완료 금액 합계

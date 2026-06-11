@@ -21,6 +21,8 @@ public class BillingListRespDto {
     private String grade; // 학년
     private String beltCode; // 급수 코드
     private String beltName; // 급수명
+    private String ropeBeltCode;          // 줄넘기 급수코드
+    private String ropeBeltName;          // 줄넘기 급수명
     private Integer billingCode; // 청구코드
     private Integer billingAmount; // 청구금액
     private LocalDate billingDate; // 청구일

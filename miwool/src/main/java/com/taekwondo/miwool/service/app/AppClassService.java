@@ -107,40 +107,39 @@ public class AppClassService {
         // 3. DTO 변환
         List<ClassStudentDetailDto> students = results.stream()
                 .map(row -> {
-                    Integer genderCode = (Integer) row[0];
-                    String studentName = (String) row[1];
-                    LocalDate birthDate = ((java.sql.Date) row[2]).toLocalDate();
-                    String grade = (String) row[3];
-                    String beltCode = (String) row[4];
-                    String beltName = (String) row[5];
-                    String guardianPhone = (String) row[6];
-                    String studentPhone = (String) row[7];
-                    
-                    // useVehicle은 Boolean으로 반환될 수 있음
-                    Integer useVehicle = (row[8] instanceof Boolean) 
-                            ? ((Boolean) row[8] ? 1 : 0) 
-                            : ((Number) row[8]).intValue();
-                    
-                    String pickupLocation = (String) row[9];
-                    String dropoffLocation = (String) row[10];
-                    String handoverMethod = (String) row[11];
-                    
-                    // 나이 계산
+                    Integer genderCode    = (Integer) row[0];
+                    String studentName    = (String) row[1];
+                    LocalDate birthDate   = ((java.sql.Date) row[2]).toLocalDate();
+                    String grade          = (String) row[3];
+                    String beltCode       = (String) row[4];  // 미사용이지만 인덱스 유지
+                    String beltName       = (String) row[5];
+                    String ropeBeltCode   = (String) row[6];
+                    String ropeBeltName   = (String) row[7];
+                    String guardianPhone  = (String) row[8];
+                    String studentPhone   = (String) row[9];
+                    Integer useVehicle    = (row[10] instanceof Boolean)
+                            ? ((Boolean) row[10] ? 1 : 0)
+                            : ((Number) row[10]).intValue();
+                    String pickupLocation   = (String) row[11];
+                    String dropoffLocation  = (String) row[12];
+                    String handoverMethod   = (String) row[13];
+ 
                     Integer age = AgeUtil.calculateKoreanAge(birthDate);
-                    
-                    // 차량이용 안 하면 차량 관련 필드 null 처리
+ 
                     if (useVehicle == 0) {
                         pickupLocation = null;
                         dropoffLocation = null;
                         handoverMethod = null;
                     }
-                    
+ 
                     return ClassStudentDetailDto.builder()
                             .genderCode(genderCode)
                             .studentName(studentName)
                             .age(age)
                             .grade(grade)
                             .beltName(beltName)
+                            .ropeBeltCode(ropeBeltCode)
+                            .ropeBeltName(ropeBeltName)
                             .guardianPhone(guardianPhone)
                             .studentPhone(studentPhone)
                             .useVehicle(useVehicle)

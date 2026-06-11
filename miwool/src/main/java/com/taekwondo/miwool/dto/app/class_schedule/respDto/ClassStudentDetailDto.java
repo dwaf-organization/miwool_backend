@@ -16,6 +16,8 @@ public class ClassStudentDetailDto {
     private Integer age; // 나이
     private String grade; // 학년
     private String beltName; // 급수명
+    private String ropeBeltCode;     // 줄넘기 급수코드
+    private String ropeBeltName;     // 줄넘기 급수명
     private String guardianPhone; // 보호자연락처
     private String studentPhone; // 제자연락처
     private Integer useVehicle; // 차량이용여부 (1=이용, 0=미이용)
