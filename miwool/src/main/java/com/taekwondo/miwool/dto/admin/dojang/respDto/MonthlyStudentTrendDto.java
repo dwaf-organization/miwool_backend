@@ -11,8 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MonthlyStudentTrendDto {
     
-    private String month; // 년월 (2026-04)
+    private String month; // 년월
     private Integer enrolled; // 재원
     private Integer withdrawn; // 퇴관
     private Integer trial; // 체험
+    private Integer suspended;    // 휴관
 }

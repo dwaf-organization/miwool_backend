@@ -17,6 +17,8 @@ public class PopupRespDto {
     private List<StudentInfoDto> enrollment; // 입관 제자 목록
     private List<StudentInfoDto> withdrawal; // 퇴관 제자 목록
     private List<StudentInfoDto> trial; // 체험 제자 목록
+    private List<StudentInfoDto> suspension;    // 휴관 제자 목록
+    private List<StudentInfoDto> reinstatement; // 복관 제자 목록
     private List<StudentInfoDto> promotion; // 승단예정 제자 목록
     
     @Data

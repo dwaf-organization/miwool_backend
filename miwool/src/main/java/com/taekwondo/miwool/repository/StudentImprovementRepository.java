@@ -19,7 +19,7 @@ public interface StudentImprovementRepository extends JpaRepository<StudentImpro
             "FROM student_improvement si " +
             "INNER JOIN student_mst s ON si.student_code = s.student_code " +
             "INNER JOIN common_mst c ON si.improvement_code = c.common_code " +
-            "WHERE s.dojang_code = :dojangCode AND s.status_code = '재원' AND c.group_code = 'CHANGE_NEED' " +
+            "WHERE s.dojang_code = :dojangCode AND s.status_code IN ('재원', '복관') AND c.group_code = 'CHANGE_NEED' " +
             "GROUP BY si.improvement_code, c.code_name ORDER BY c.code_order",
             nativeQuery = true)
     List<Object[]> getImprovementStats(@Param("dojangCode") String dojangCode);

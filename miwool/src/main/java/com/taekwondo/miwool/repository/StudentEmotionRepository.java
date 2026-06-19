@@ -19,7 +19,7 @@ public interface StudentEmotionRepository extends JpaRepository<StudentEmotion, 
             "FROM student_emotion se " +
             "INNER JOIN student_mst s ON se.student_code = s.student_code " +
             "INNER JOIN common_mst c ON se.emotion_code = c.common_code " +
-            "WHERE s.dojang_code = :dojangCode AND s.status_code = '재원' AND c.group_code = 'PERS_EMOT' " +
+            "WHERE s.dojang_code = :dojangCode AND s.status_code IN ('재원', '복관') AND c.group_code = 'PERS_EMOT' " +
             "GROUP BY se.emotion_code, c.code_name ORDER BY c.code_order",
             nativeQuery = true)
         List<Object[]> getEmotionStats(@Param("dojangCode") String dojangCode);

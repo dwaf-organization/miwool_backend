@@ -19,6 +19,7 @@ public class StudentManagementSummaryRespDto {
     private RevenueSummaryDto revenueSummary; // 교육비결산
     private List<GenderRevenueDto> genderRevenue; // 성별매출
     private List<AgeRevenueDto> ageRevenue; // 연령별매출
+    private List<PaymentMethodRevenueDto> paymentMethodRevenue; // 납부방법별 매출
     private EducationGuideDto educationGuide; // 교육지도
     
     // 납부금
@@ -41,6 +42,8 @@ public class StudentManagementSummaryRespDto {
         private StatusCountDto enrolled; // 재원
         private StatusCountDto withdrawn; // 퇴관
         private StatusCountDto trial; // 체험
+        private StatusCountDto suspension;    // 휴관
+        private StatusCountDto reinstatement; // 복관
     }
     
     @Data
@@ -101,6 +104,16 @@ public class StudentManagementSummaryRespDto {
         private Integer revenue; // 매출
         private Integer previousRevenue; // 전월 매출
         private Double changeRate; // 증감율 (%)
+    }
+    
+    // 납부방법별 매출
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PaymentMethodRevenueDto {
+        private String paymentMethod; // 납부방법
+        private Integer amount;       // 납부금액
     }
     
     // 교육지도

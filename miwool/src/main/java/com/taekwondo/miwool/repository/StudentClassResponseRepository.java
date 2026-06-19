@@ -19,7 +19,7 @@ public interface StudentClassResponseRepository extends JpaRepository<StudentCla
             "FROM student_class_response scr " +
             "INNER JOIN student_mst s ON scr.student_code = s.student_code " +
             "INNER JOIN common_mst c ON scr.class_response_code = c.common_code " +
-            "WHERE s.dojang_code = :dojangCode AND s.status_code = '재원' AND c.group_code = 'PERS_LESSON' " +
+            "WHERE s.dojang_code = :dojangCode AND s.status_code IN ('재원', '복관') AND c.group_code = 'PERS_LESSON' " +
             "GROUP BY scr.class_response_code, c.code_name ORDER BY c.code_order",
             nativeQuery = true)
     List<Object[]> getClassResponseStats(@Param("dojangCode") String dojangCode);

@@ -28,7 +28,7 @@ public interface StudentCharacterRepository extends JpaRepository<StudentCharact
         "INNER JOIN student_mst s ON sc.student_code = s.student_code " +
         "INNER JOIN common_mst c ON sc.character_code = c.common_code " +
         "WHERE s.dojang_code = :dojangCode " +
-        "AND s.status_code = '재원' " +
+        "AND s.status_code IN ('재원', '복관') " +
         "AND c.group_code = 'PERS_BASIC' " +
         "GROUP BY sc.character_code, c.code_name " +
         "ORDER BY c.code_order",

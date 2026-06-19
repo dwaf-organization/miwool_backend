@@ -70,7 +70,6 @@ public class AdminDojangOperationService {
         LocalDate endOfMonth = targetMonth.atEndOfMonth();
         String monthStr = targetMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"));
         
-        // 해당 월말 기준 상태별 제자수 조회
         List<Object[]> statusCounts = studentStatusRepository.countByStatusAsOfDate(dojangCode, endOfMonth);
         
         Map<String, Integer> statusMap = new HashMap<>();
@@ -80,21 +79,20 @@ public class AdminDojangOperationService {
             statusMap.put(statusCode, count);
         }
         
-        Integer enrolled = statusMap.getOrDefault("재원", 0);
-        Integer withdrawn = statusMap.getOrDefault("퇴관", 0);
-        Integer trial = statusMap.getOrDefault("체험", 0);
-        Integer totalStudents = enrolled + withdrawn + trial;
+        // 복관은 재원으로 합산 ← 수정!
+        Integer enrolled  = statusMap.getOrDefault("재원", 0)
+                          + statusMap.getOrDefault("복관", 0);
+        Integer withdrawn  = statusMap.getOrDefault("퇴관", 0);
+        Integer trial      = statusMap.getOrDefault("체험", 0);
+        Integer suspended  = statusMap.getOrDefault("휴관", 0);
+        Integer totalStudents = enrolled + withdrawn + trial + suspended;
         
-        // 재원율 계산
-        Double retentionRate = totalStudents > 0 
-                ? (enrolled.doubleValue() / totalStudents) * 100 
+        Double retentionRate = totalStudents > 0
+                ? (enrolled.doubleValue() / totalStudents) * 100
                 : 0.0;
         
-        // 이달의 매출 (납부완료만)
         Long monthRevenue = monthlyBillingRepository.sumRevenueByMonth(dojangCode, monthStr);
-        if (monthRevenue == null) {
-            monthRevenue = 0L;
-        }
+        if (monthRevenue == null) monthRevenue = 0L;
         
         return OperationKpiDto.builder()
                 .totalStudents(totalStudents)
@@ -109,12 +107,10 @@ public class AdminDojangOperationService {
     private List<MonthlyStudentTrendDto> getStudentTrend(String dojangCode, YearMonth targetMonth) {
         List<MonthlyStudentTrendDto> trends = new ArrayList<>();
         
-        // 6개월 전부터 현재 월까지
         for (int i = 5; i >= 0; i--) {
             YearMonth month = targetMonth.minusMonths(i);
             LocalDate endOfMonth = month.atEndOfMonth();
             
-            // 해당 월말 기준 상태별 제자수
             List<Object[]> statusCounts = studentStatusRepository.countByStatusAsOfDate(dojangCode, endOfMonth);
             
             Map<String, Integer> statusMap = new HashMap<>();
@@ -126,9 +122,11 @@ public class AdminDojangOperationService {
             
             trends.add(MonthlyStudentTrendDto.builder()
                     .month(month.format(DateTimeFormatter.ofPattern("yyyy-MM")))
-                    .enrolled(statusMap.getOrDefault("재원", 0))
+                    .enrolled(statusMap.getOrDefault("재원", 0)
+                            + statusMap.getOrDefault("복관", 0))  // ← 복관 합산!
                     .withdrawn(statusMap.getOrDefault("퇴관", 0))
                     .trial(statusMap.getOrDefault("체험", 0))
+                    .suspended(statusMap.getOrDefault("휴관", 0))
                     .build());
         }
         

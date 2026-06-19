@@ -32,6 +32,8 @@ public class StatisticsDashboardRespDto {
         private Integer enrolled; // 입관 수
         private Integer trial; // 체험 수
         private Integer withdrawn; // 퇴관 수
+        private Integer suspended;    // 휴관 수
+        private Integer reinstated;   // 복관 수
     }
     
     // 패키지분포
@@ -68,6 +70,7 @@ public class StatisticsDashboardRespDto {
         private List<CodeCountDto> classResponse; // 수업반응특성
         private List<CodeCountDto> improvement; // 변화필요부분
         private List<CodeCountDto> strength; // 강점
+        private List<CodeCountDto> skill; // 기능습득속도
     }
     
     // 상담통계

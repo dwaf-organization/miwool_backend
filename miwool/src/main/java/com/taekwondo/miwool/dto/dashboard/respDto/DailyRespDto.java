@@ -23,6 +23,8 @@ public class DailyRespDto {
     @AllArgsConstructor
     public static class SummaryDto {
         private Integer totalEnrollment; // 해당 월 입관생 수
+        private Integer totalSuspension;    // 휴관
+        private Integer totalReinstatement; // 복관
         private Integer totalWithdrawal; // 해당 월 퇴관생 수
         private Integer currentTotal; // 현재 총원 (재원 + 체험)
     }

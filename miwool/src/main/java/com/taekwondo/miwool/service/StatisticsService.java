@@ -1,5 +1,6 @@
 package com.taekwondo.miwool.service;
 
+import com.taekwondo.miwool.dto.statistics.respDto.PaymentMethodRevenueRespDto;
 import com.taekwondo.miwool.dto.statistics.respDto.StatisticsDashboardRespDto;
 import com.taekwondo.miwool.dto.statistics.respDto.StatisticsDashboardRespDto.*;
 import com.taekwondo.miwool.dto.statistics.respDto.StudentManagementSummaryRespDto;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,6 +34,8 @@ public class StatisticsService {
     private final StudentStrengthRepository studentStrengthRepository;
     private final StudentCounselRepository studentCounselRepository;
     private final StudentManagementRepository studentManagementRepository;
+    private final TuitionPaymentRepository tuitionPaymentRepository;
+    private final StudentSkillRepository studentSkillRepository;
 
     @Transactional(readOnly = true)
     public StatisticsDashboardRespDto getStatisticsDashboard(String dojangCode, String month) {
@@ -75,15 +79,16 @@ public class StatisticsService {
         
         YearMonth currentMonth = YearMonth.parse(month, DateTimeFormatter.ofPattern("yyyyMM"));
         
-        // 현재월부터 11개월 전까지 (총 12개월)
         for (int i = 11; i >= 0; i--) {
             YearMonth targetMonth = currentMonth.minusMonths(i);
             String targetMonthStr = targetMonth.format(DateTimeFormatter.ofPattern("yyyyMM"));
             
-            int all = studentRepository.countMonthlyStudentsByMonth(dojangCode, targetMonthStr);
-            int enrolled = studentRepository.countMonthlyEnrolledByMonth(dojangCode, targetMonthStr);
-            int trial = studentRepository.countMonthlyTrialByMonth(dojangCode, targetMonthStr);
-            int withdrawn = studentRepository.countMonthlyWithdrawnByMonth(dojangCode, targetMonthStr);
+            int all        = studentRepository.countMonthlyStudentsByMonth(dojangCode, targetMonthStr);
+            int enrolled   = studentRepository.countMonthlyEnrolledByMonth(dojangCode, targetMonthStr);
+            int trial      = studentRepository.countMonthlyTrialByMonth(dojangCode, targetMonthStr);
+            int withdrawn  = studentRepository.countMonthlyWithdrawnByMonth(dojangCode, targetMonthStr);
+            int suspended  = studentRepository.countMonthlySuspendedByMonth(dojangCode, targetMonthStr);
+            int reinstated = studentRepository.countMonthlyReinstatedByMonth(dojangCode, targetMonthStr);
             
             result.add(MonthlyStatusDto.builder()
                     .month(targetMonthStr)
@@ -91,6 +96,8 @@ public class StatisticsService {
                     .enrolled(enrolled)
                     .trial(trial)
                     .withdrawn(withdrawn)
+                    .suspended(suspended)
+                    .reinstated(reinstated)
                     .build());
         }
         
@@ -141,6 +148,7 @@ public class StatisticsService {
                 .classResponse(getCodeCountList(studentClassResponseRepository.getClassResponseStats(dojangCode)))
                 .improvement(getCodeCountList(studentImprovementRepository.getImprovementStats(dojangCode)))
                 .strength(getCodeCountList(studentStrengthRepository.getStrengthStats(dojangCode)))
+                .skill(getCodeCountList(studentSkillRepository.getSkillStats(dojangCode)))
                 .build();
     }
 
@@ -213,6 +221,10 @@ public class StatisticsService {
         // 5. 연령별매출
         List<StudentManagementSummaryRespDto.AgeRevenueDto> ageRevenue = getAgeRevenueSummary(dojangCode, billingMonth, previousBillingMonth);
 
+        // 납부방법별 매출 조회 ← 추가!
+        List<StudentManagementSummaryRespDto.PaymentMethodRevenueDto> paymentMethodRevenue =
+                getPaymentMethodRevenueSummary(dojangCode, billingMonth);
+        
         // 6. 교육지도
         StudentManagementSummaryRespDto.EducationGuideDto educationGuide = getEducationGuideSummary(dojangCode, month);
 
@@ -225,6 +237,7 @@ public class StatisticsService {
                 .revenueSummary(revenueSummary)
                 .genderRevenue(genderRevenue)
                 .ageRevenue(ageRevenue)
+                .paymentMethodRevenue(paymentMethodRevenue)
                 .educationGuide(educationGuide)
                 .build();
     }
@@ -261,6 +274,14 @@ public class StatisticsService {
         int currentTrial = studentRepository.countMonthlyTrialByMonth(dojangCode, month);
         int previousTrial = studentRepository.countMonthlyTrialByMonth(dojangCode, previousMonth);
         
+        // 휴관
+        int currentSuspension  = studentRepository.countMonthlySuspendedByMonth(dojangCode, month);
+        int previousSuspension = studentRepository.countMonthlySuspendedByMonth(dojangCode, previousMonth);
+        
+        // 복관
+        int currentReinstatement  = studentRepository.countMonthlyReinstatedByMonth(dojangCode, month);
+        int previousReinstatement = studentRepository.countMonthlyReinstatedByMonth(dojangCode, previousMonth);
+        
         return StudentManagementSummaryRespDto.StudentStatusDto.builder()
                 .newEnrollment(StudentManagementSummaryRespDto.StatusCountDto.builder()
                         .current(currentEnrollment)
@@ -281,6 +302,16 @@ public class StatisticsService {
                         .current(currentTrial)
                         .previous(previousTrial)
                         .change(currentTrial - previousTrial)
+                        .build())
+                .suspension(StudentManagementSummaryRespDto.StatusCountDto.builder()
+                        .current(currentSuspension)
+                        .previous(previousSuspension)
+                        .change(currentSuspension - previousSuspension)
+                        .build())
+                .reinstatement(StudentManagementSummaryRespDto.StatusCountDto.builder()
+                        .current(currentReinstatement)
+                        .previous(previousReinstatement)
+                        .change(currentReinstatement - previousReinstatement)
                         .build())
                 .build();
     }
@@ -461,4 +492,20 @@ public class StatisticsService {
         return Math.round(((double) (current - previous) / previous) * 100 * 100.0) / 100.0;
     }
     
+    // 납부방법별 매출
+    private List<StudentManagementSummaryRespDto.PaymentMethodRevenueDto> getPaymentMethodRevenueSummary(
+            String dojangCode, String billingMonth) {
+ 
+        // billingMonth: "2026-06" → month: "202606" 변환
+        String month = billingMonth.replace("-", "");
+ 
+        List<Object[]> rawData = tuitionPaymentRepository.getRevenueByPaymentMethod(dojangCode, month);
+ 
+        return rawData.stream()
+                .map(row -> StudentManagementSummaryRespDto.PaymentMethodRevenueDto.builder()
+                        .paymentMethod((String) row[0])
+                        .amount(((Number) row[1]).intValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }

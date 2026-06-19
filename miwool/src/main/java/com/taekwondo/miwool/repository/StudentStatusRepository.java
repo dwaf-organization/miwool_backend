@@ -32,7 +32,7 @@ public interface StudentStatusRepository extends JpaRepository<StudentStatus, St
     // countByStatusAsOfDate - 복관을 재원으로 집계 (기존 메서드 수정)
     @Query(value = """
         SELECT 
-          CASE WHEN ss.status_code = '복관' THEN '재원' ELSE ss.status_code END AS status_code,
+          ss.status_code,
           COUNT(DISTINCT ss.student_code) as count
         FROM (
           SELECT 
@@ -53,8 +53,7 @@ public interface StudentStatusRepository extends JpaRepository<StudentStatus, St
             AND sm.is_deleted = 0
             AND sm.created_at <= :endOfMonth
         ) ss
-        GROUP BY 
-          CASE WHEN ss.status_code = '복관' THEN '재원' ELSE ss.status_code END
+        GROUP BY ss.status_code
         """, nativeQuery = true)
     List<Object[]> countByStatusAsOfDate(
             @Param("dojangCode") String dojangCode,

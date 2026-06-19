@@ -175,6 +175,36 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         @Param("month") String month);
     
     /**
+     * 대시보드 - 월별 휴관생 수 (해당 월에 휴관 이력이 생긴 인원)
+     */
+    @Query(value = 
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.status_code = '휴관' " +
+        "AND DATE_FORMAT(ss.change_date, '%Y%m') = :month",
+        nativeQuery = true)
+    int countMonthlySuspension(
+        @Param("dojangCode") String dojangCode,
+        @Param("month") String month);
+ 
+    /**
+     * 대시보드 - 월별 복관생 수 (해당 월에 복관 이력이 생긴 인원)
+     */
+    @Query(value = 
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.status_code = '복관' " +
+        "AND DATE_FORMAT(ss.change_date, '%Y%m') = :month",
+        nativeQuery = true)
+    int countMonthlyReinstatement(
+        @Param("dojangCode") String dojangCode,
+        @Param("month") String month);
+    
+    /**
      * 대시보드 - 월별 퇴관생 수
      * student_status 테이블에서 퇴관 이력 조회
      */
@@ -220,17 +250,17 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         @Param("month") String month);
     
     /**
-     * 대시보드 - 일별 입관/퇴관/체험 수 조회
-     * student_status에서 입관일/퇴관일 기준 집계
-     * 같은 날짜에 재원/체험 여러 번 변경 시 가장 최신 상태만 카운트 (퇴관은 별도)
-     * 결과: [날짜, 입관수, 퇴관수, 체험수]
+     * 대시보드 - 일별 입관/퇴관/체험/휴관/복관 수 조회
+     * 결과: [날짜, 입관수, 퇴관수, 체험수, 휴관수, 복관수]
      */
     @Query(value = 
         "SELECT " +
         "    dates.date, " +
         "    COALESCE(enroll.cnt, 0) AS enrollment, " +
         "    COALESCE(withdraw.cnt, 0) AS withdrawal, " +
-        "    COALESCE(trial.cnt, 0) AS trial " +
+        "    COALESCE(trial.cnt, 0) AS trial, " +
+        "    COALESCE(suspension.cnt, 0) AS suspension, " +    // ← 추가!
+        "    COALESCE(reinstatement.cnt, 0) AS reinstatement " +  // ← 추가!
         "FROM ( " +
         "    SELECT DISTINCT DATE(s.regist_date) AS date " +
         "    FROM student_mst s " +
@@ -241,7 +271,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         "    FROM student_status ss " +
         "    JOIN student_mst s ON ss.student_code = s.student_code " +
         "    WHERE s.dojang_code = :dojangCode " +
-        "    AND ss.status_code = '퇴관' " +
+        "    AND ss.status_code IN ('퇴관', '휴관', '복관') " +  // ← 휴관/복관 추가!
         "    AND DATE_FORMAT(ss.change_date, '%Y%m') = :month " +
         ") dates " +
         "LEFT JOIN ( " +
@@ -287,6 +317,24 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         "    ) " +
         "    GROUP BY DATE(s.regist_date) " +
         ") trial ON dates.date = trial.date " +
+        "LEFT JOIN ( " +                                       // ← 추가! 휴관
+        "    SELECT DATE(ss.change_date) AS date, COUNT(DISTINCT ss.student_code) AS cnt " +
+        "    FROM student_status ss " +
+        "    JOIN student_mst s ON ss.student_code = s.student_code " +
+        "    WHERE s.dojang_code = :dojangCode " +
+        "    AND ss.status_code = '휴관' " +
+        "    AND DATE_FORMAT(ss.change_date, '%Y%m') = :month " +
+        "    GROUP BY DATE(ss.change_date) " +
+        ") suspension ON dates.date = suspension.date " +
+        "LEFT JOIN ( " +                                       // ← 추가! 복관
+        "    SELECT DATE(ss.change_date) AS date, COUNT(DISTINCT ss.student_code) AS cnt " +
+        "    FROM student_status ss " +
+        "    JOIN student_mst s ON ss.student_code = s.student_code " +
+        "    WHERE s.dojang_code = :dojangCode " +
+        "    AND ss.status_code = '복관' " +
+        "    AND DATE_FORMAT(ss.change_date, '%Y%m') = :month " +
+        "    GROUP BY DATE(ss.change_date) " +
+        ") reinstatement ON dates.date = reinstatement.date " +
         "ORDER BY dates.date",
         nativeQuery = true)
     List<Object[]> getDailyStudentStats(
@@ -437,6 +485,36 @@ public interface StudentRepository extends JpaRepository<Student, String> {
         @Param("month") String month);
 
     /**
+     * 통계 - 월말 기준 휴관생 수 (해당 월에 휴관 이력이 생긴 인원)
+     */
+    @Query(value =
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.status_code = '휴관' " +
+        "AND DATE_FORMAT(ss.change_date, '%Y%m') = :month",
+        nativeQuery = true)
+    int countMonthlySuspendedByMonth(
+        @Param("dojangCode") String dojangCode,
+        @Param("month") String month);
+ 
+    /**
+     * 통계 - 월말 기준 복관생 수 (해당 월에 복관 이력이 생긴 인원)
+     */
+    @Query(value =
+        "SELECT COUNT(DISTINCT ss.student_code) " +
+        "FROM student_status ss " +
+        "JOIN student_mst s ON ss.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND ss.status_code = '복관' " +
+        "AND DATE_FORMAT(ss.change_date, '%Y%m') = :month",
+        nativeQuery = true)
+    int countMonthlyReinstatedByMonth(
+        @Param("dojangCode") String dojangCode,
+        @Param("month") String month);
+    
+    /**
      * 제자관리결산 - 성별 재원생 수
      * 결과: [성별코드, 인원수]
      */
@@ -581,22 +659,24 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     List<Object[]> findTop5ByStudentCount();
  
     /**
-     * 재원현황 TOP 5 조회
+     * 재원현황 TOP 3 조회 (휴관/복관 추가, LIMIT 5 → 3)
      */
     @Query(value = """
         SELECT 
           d.dojang_name,
           SUM(CASE WHEN s.status_code = '재원' THEN 1 ELSE 0 END) as enrolled,
           SUM(CASE WHEN s.status_code = '퇴관' THEN 1 ELSE 0 END) as withdrawn,
-          SUM(CASE WHEN s.status_code = '체험' THEN 1 ELSE 0 END) as trial
+          SUM(CASE WHEN s.status_code = '체험' THEN 1 ELSE 0 END) as trial,
+          SUM(CASE WHEN s.status_code = '휴관' THEN 1 ELSE 0 END) as suspended,
+          SUM(CASE WHEN s.status_code = '복관' THEN 1 ELSE 0 END) as reinstated
         FROM taekwondo_mst d
         LEFT JOIN student_mst s ON d.dojang_code = s.dojang_code
         WHERE s.is_deleted = 0
         GROUP BY d.dojang_code, d.dojang_name
         ORDER BY enrolled DESC
-        LIMIT 5
+        LIMIT 3
         """, nativeQuery = true)
-    List<Object[]> findTop5ByEnrollmentStatus();
+    List<Object[]> findTop3ByEnrollmentStatus();
  
     /**
      * 특정 도장의 특정 상태별 제자 수 조회

@@ -51,7 +51,7 @@ public class AdminDashboardService {
         // 3. 제자수 TOP 5
         List<StudentRankingDto> studentRanking = getStudentRanking();
         
-        // 4. 재원현황 TOP 5
+        // 4. 재원현황 TOP 3
         List<EnrollmentStatusDto> enrollmentStatus = getEnrollmentStatus();
         
         // 5. 매출비교 TOP 5
@@ -213,10 +213,10 @@ public class AdminDashboardService {
     }
 
     /**
-     * 재원현황 TOP 5 조회
+     * 재원현황 TOP 3 조회
      */
     private List<EnrollmentStatusDto> getEnrollmentStatus() {
-        List<Object[]> results = studentRepository.findTop5ByEnrollmentStatus();
+        List<Object[]> results = studentRepository.findTop3ByEnrollmentStatus();
         
         return results.stream()
                 .map(row -> EnrollmentStatusDto.builder()
@@ -224,6 +224,7 @@ public class AdminDashboardService {
                         .enrolled(((Number) row[1]).longValue())
                         .withdrawn(((Number) row[2]).longValue())
                         .trial(((Number) row[3]).longValue())
+                        .suspended(((Number) row[4]).longValue())
                         .build())
                 .collect(Collectors.toList());
     }

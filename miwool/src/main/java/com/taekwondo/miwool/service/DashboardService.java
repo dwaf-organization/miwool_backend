@@ -48,11 +48,15 @@ public class DashboardService {
 
         // 1. 월 요약 데이터 조회
         int totalEnrollment = studentRepository.countMonthlyEnrollment(dojangCode, month);
+        int totalSuspension    = studentRepository.countMonthlySuspension(dojangCode, month);
+        int totalReinstatement = studentRepository.countMonthlyReinstatement(dojangCode, month);
         int totalWithdrawal = studentRepository.countMonthlyWithdrawal(dojangCode, month);
         int currentTotal = studentRepository.countCurrentTotal(dojangCode, month);
 
         SummaryDto summary = SummaryDto.builder()
                 .totalEnrollment(totalEnrollment)
+                .totalSuspension(totalSuspension)
+                .totalReinstatement(totalReinstatement)
                 .totalWithdrawal(totalWithdrawal)
                 .currentTotal(currentTotal)
                 .build();
@@ -68,12 +72,16 @@ public class DashboardService {
             int enrollment = ((Number) row[1]).intValue();
             int withdrawal = ((Number) row[2]).intValue();
             int trial = ((Number) row[3]).intValue();
+            int suspension    = ((Number) row[4]).intValue();
+            int reinstatement = ((Number) row[5]).intValue();
 
             dailyMap.put(dateStr, DailyDataDto.builder()
                     .date(dateStr)
                     .enrollment(enrollment)
                     .withdrawal(withdrawal)
                     .trial(trial)
+                    .suspension(suspension)
+                    .reinstatement(reinstatement)
                     .paidAmount(0) // 초기값
                     .build());
         }
@@ -124,6 +132,8 @@ public class DashboardService {
         
         dailyMap.values().forEach(dto -> {
             if (dto.getPromotion() == null) dto.setPromotion(0);
+            if (dto.getSuspension() == null) dto.setSuspension(0);
+            if (dto.getReinstatement() == null) dto.setReinstatement(0);
         });
         
         // 5. Map을 List로 변환하고 날짜순 정렬
@@ -145,11 +155,15 @@ public class DashboardService {
  
         // 1. 월 요약 데이터 조회 (달력과 동일)
         int totalEnrollment = studentRepository.countMonthlyEnrollment(dojangCode, month);
+        int totalSuspension    = studentRepository.countMonthlySuspension(dojangCode, month);
+        int totalReinstatement = studentRepository.countMonthlyReinstatement(dojangCode, month);
         int totalWithdrawal = studentRepository.countMonthlyWithdrawal(dojangCode, month);
         int currentTotal = studentRepository.countCurrentTotal(dojangCode, month);
  
         DailyRespDto.SummaryDto summary = DailyRespDto.SummaryDto.builder()
                 .totalEnrollment(totalEnrollment)
+                .totalSuspension(totalSuspension)
+                .totalReinstatement(totalReinstatement)
                 .totalWithdrawal(totalWithdrawal)
                 .currentTotal(currentTotal)
                 .build();
@@ -217,11 +231,15 @@ public class DashboardService {
 
         // 1. 월 요약 데이터 조회 (달력/일일과 동일)
         int totalEnrollment = studentRepository.countMonthlyEnrollment(dojangCode, month);
+        int totalSuspension    = studentRepository.countMonthlySuspension(dojangCode, month);
+        int totalReinstatement = studentRepository.countMonthlyReinstatement(dojangCode, month);
         int totalWithdrawal = studentRepository.countMonthlyWithdrawal(dojangCode, month);
         int currentTotal = studentRepository.countCurrentTotal(dojangCode, month);
 
         WeeklyRespDto.SummaryDto summary = WeeklyRespDto.SummaryDto.builder()
                 .totalEnrollment(totalEnrollment)
+                .totalSuspension(totalSuspension)
+                .totalReinstatement(totalReinstatement)
                 .totalWithdrawal(totalWithdrawal)
                 .currentTotal(currentTotal)
                 .build();
@@ -297,11 +315,15 @@ public class DashboardService {
 
         // 2. 월 요약 데이터 조회 (동일)
         int totalEnrollment = studentRepository.countMonthlyEnrollment(dojangCode, month);
+        int totalSuspension    = studentRepository.countMonthlySuspension(dojangCode, month);
+        int totalReinstatement = studentRepository.countMonthlyReinstatement(dojangCode, month);
         int totalWithdrawal = studentRepository.countMonthlyWithdrawal(dojangCode, month);
         int currentTotal = studentRepository.countCurrentTotal(dojangCode, month);
 
         SummaryTabRespDto.SummaryDto summary = SummaryTabRespDto.SummaryDto.builder()
                 .totalEnrollment(totalEnrollment)
+                .totalSuspension(totalSuspension)
+                .totalReinstatement(totalReinstatement)
                 .totalWithdrawal(totalWithdrawal)
                 .currentTotal(currentTotal)
                 .build();
@@ -336,6 +358,23 @@ public class DashboardService {
                 .change(currentTrial - previousTrial)
                 .build();
 
+        int currentSuspension    = studentRepository.countMonthlySuspension(dojangCode, month);
+        int previousSuspension   = studentRepository.countMonthlySuspension(dojangCode, previousMonth);
+        int currentReinstatement = studentRepository.countMonthlyReinstatement(dojangCode, month);
+        int previousReinstatement = studentRepository.countMonthlyReinstatement(dojangCode, previousMonth);
+ 
+        SummaryTabRespDto.StudentCountDto suspensionData = SummaryTabRespDto.StudentCountDto.builder()
+                .current(currentSuspension)
+                .previous(previousSuspension)
+                .change(currentSuspension - previousSuspension)
+                .build();
+ 
+        SummaryTabRespDto.StudentCountDto reinstatementData = SummaryTabRespDto.StudentCountDto.builder()
+                .current(currentReinstatement)
+                .previous(previousReinstatement)
+                .change(currentReinstatement - previousReinstatement)
+                .build();
+        
         // 6. 매출 데이터 (율만)
         // billing_month 형식: "2026-04"
         String billingMonth = yearMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"));
@@ -356,6 +395,8 @@ public class DashboardService {
                 .enrollment(enrollmentData)
                 .withdrawal(withdrawalData)
                 .trial(trialData)
+                .suspension(suspensionData)
+                .reinstatement(reinstatementData)
                 .revenue(revenueData)
                 .build();
 
@@ -406,7 +447,15 @@ public class DashboardService {
         List<Object[]> trialRows = studentRepository.getStudentsByDateAndStatus(dojangCode, localDate, "체험");
         List<PopupRespDto.StudentInfoDto> trial = toStudentInfoDtoList(trialRows);
  
-        // 4. 승단예정 제자 목록
+         // 4. 휴관 제자 목록
+        List<Object[]> suspensionRows = studentRepository.getStudentsByDateAndStatus(dojangCode, localDate, "휴관");
+        List<PopupRespDto.StudentInfoDto> suspension = toStudentInfoDtoList(suspensionRows);
+ 
+        // 5. 복관 제자 목록
+        List<Object[]> reinstatementRows = studentRepository.getStudentsByDateAndStatus(dojangCode, localDate, "복관");
+        List<PopupRespDto.StudentInfoDto> reinstatement = toStudentInfoDtoList(reinstatementRows);
+
+        // 6. 승단예정 제자 목록
         List<Object[]> promoRows = studentBeltRepository.getPromotionStudentsByDate(dojangCode, localDate);
         List<PopupRespDto.StudentInfoDto> promotion = promoRows.stream()
                 .map(row -> {
@@ -440,6 +489,8 @@ public class DashboardService {
                 .enrollment(enrollment)
                 .withdrawal(withdrawal)
                 .trial(trial)
+                .suspension(suspension)
+                .reinstatement(reinstatement)
                 .promotion(promotion)
                 .build();
     }

@@ -23,6 +23,8 @@ public class CalendarRespDto {
     @AllArgsConstructor
     public static class SummaryDto {
         private Integer totalEnrollment; // 해당 월 입관생 수
+        private Integer totalSuspension;    // 휴관
+        private Integer totalReinstatement; // 복관
         private Integer totalWithdrawal; // 해당 월 퇴관생 수
         private Integer currentTotal; // 현재 총원 (재원 + 체험)
     }
@@ -36,6 +38,8 @@ public class CalendarRespDto {
         private Integer enrollment; // 입관 +n
         private Integer withdrawal; // 퇴관 +n
         private Integer trial; // 체험 +n
+        private Integer suspension;   // 휴관 +n
+        private Integer reinstatement; // 복관 +n
         private Integer promotion; // 승단예정 +n
         private Integer paidAmount; // 납부완료 금액
     }

@@ -21,6 +21,8 @@ public class SummaryTabRespDto {
     @AllArgsConstructor
     public static class SummaryDto {
         private Integer totalEnrollment; // 해당 월 입관생 수
+        private Integer totalSuspension;    // 휴관
+        private Integer totalReinstatement; // 복관
         private Integer totalWithdrawal; // 해당 월 퇴관생 수
         private Integer currentTotal; // 현재 총원 (재원 + 체험)
     }
@@ -34,6 +36,8 @@ public class SummaryTabRespDto {
         private StudentCountDto enrollment; // 입관 제자
         private StudentCountDto withdrawal; // 퇴관 제자
         private StudentCountDto trial; // 체험 제자
+        private StudentCountDto suspension;    // 휴관 ← 추가!
+        private StudentCountDto reinstatement; // 복관 ← 추가!
         private RevenueDto revenue; // 매출
     }
     

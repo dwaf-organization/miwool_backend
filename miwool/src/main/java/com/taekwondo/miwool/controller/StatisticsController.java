@@ -1,6 +1,7 @@
 package com.taekwondo.miwool.controller;
 
 import com.taekwondo.miwool.common.dto.RespDto;
+import com.taekwondo.miwool.dto.statistics.respDto.PaymentMethodRevenueRespDto;
 import com.taekwondo.miwool.dto.statistics.respDto.StatisticsDashboardRespDto;
 import com.taekwondo.miwool.dto.statistics.respDto.StudentManagementSummaryRespDto;
 import com.taekwondo.miwool.service.StatisticsService;
@@ -60,5 +61,6 @@ public class StatisticsController {
                     .body(RespDto.fail("제자관리결산 조회 중 오류가 발생했습니다."));
         }
     }
+
     
 }

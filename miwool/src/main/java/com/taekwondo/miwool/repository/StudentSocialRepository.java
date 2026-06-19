@@ -19,7 +19,7 @@ public interface StudentSocialRepository extends JpaRepository<StudentSocial, In
             "FROM student_social ss " +
             "INNER JOIN student_mst s ON ss.student_code = s.student_code " +
             "INNER JOIN common_mst c ON ss.social_code = c.common_code " +
-            "WHERE s.dojang_code = :dojangCode AND s.status_code = '재원' AND c.group_code = 'PERS_SOC' " +
+            "WHERE s.dojang_code = :dojangCode AND s.status_code IN ('재원', '복관') AND c.group_code = 'PERS_SOC' " +
             "GROUP BY ss.social_code, c.code_name ORDER BY c.code_order",
             nativeQuery = true)
     List<Object[]> getSocialStats(@Param("dojangCode") String dojangCode);

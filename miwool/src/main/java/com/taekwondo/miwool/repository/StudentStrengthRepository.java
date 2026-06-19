@@ -19,7 +19,7 @@ public interface StudentStrengthRepository extends JpaRepository<StudentStrength
             "FROM student_strength ss " +
             "INNER JOIN student_mst s ON ss.student_code = s.student_code " +
             "INNER JOIN common_mst c ON ss.strength_code = c.common_code " +
-            "WHERE s.dojang_code = :dojangCode AND s.status_code = '재원' AND c.group_code = 'STRENGTH' " +
+            "WHERE s.dojang_code = :dojangCode AND s.status_code IN ('재원', '복관') AND c.group_code = 'STRENGTH' " +
             "GROUP BY ss.strength_code, c.code_name ORDER BY c.code_order",
             nativeQuery = true)
     List<Object[]> getStrengthStats(@Param("dojangCode") String dojangCode);

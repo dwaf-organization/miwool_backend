@@ -57,7 +57,7 @@ public class StudentController {
             return ResponseEntity
                     .ok()
                     .body(RespDto.success("제자 등록이 완료되었습니다.", respDto));
-            
+
         } catch (IllegalArgumentException e) {
             log.warn("제자 등록 실패: {}", e.getMessage());
             return ResponseEntity

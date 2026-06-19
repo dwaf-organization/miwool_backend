@@ -15,4 +15,5 @@ public class EnrollmentStatusDto {
     private Long enrolled; // 재원
     private Long withdrawn; // 퇴관
     private Long trial; // 체험
+    private Long suspended;    // 휴관
 }

@@ -169,5 +169,24 @@ public interface TuitionPaymentRepository extends JpaRepository<TuitionPayment, 
         nativeQuery = true)
     Integer getOverallAverageFee(@Param("month") String month);
     
+    /**
+     * 납부방법별 매출 조회
+     * (payment_method, amount)
+     */
+    @Query(value =
+        "SELECT " +
+        "    COALESCE(tp.payment_method, '미분류') AS payment_method, " +
+        "    SUM(tp.payment_amount) AS amount " +
+        "FROM tuition_payment tp " +
+        "INNER JOIN monthly_billing mb ON tp.billing_code = mb.billing_code " +
+        "INNER JOIN student_mst s ON mb.student_code = s.student_code " +
+        "WHERE s.dojang_code = :dojangCode " +
+        "AND DATE_FORMAT(tp.payment_date, '%Y%m') = :month " +
+        "GROUP BY tp.payment_method " +
+        "ORDER BY amount DESC",
+        nativeQuery = true)
+    List<Object[]> getRevenueByPaymentMethod(
+            @Param("dojangCode") String dojangCode,
+            @Param("month") String month);
     
 }

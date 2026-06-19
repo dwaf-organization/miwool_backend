@@ -355,7 +355,7 @@ public interface MonthlyBillingRepository extends JpaRepository<MonthlyBilling, 
     	    "WHERE s.dojang_code = :dojangCode " +
     	    "AND mb.billing_month = :month " +
     	    "AND (:paymentStatus = '전체' OR mb.billing_status = :paymentStatus) " +
-    	    "ORDER BY mb.billing_status ASC, s.student_name ASC",
+    	    "ORDER BY mb.billing_date DESC, s.student_name ASC",
     	    nativeQuery = true)
     	List<Object[]> findBillingStudentList(
     	        @Param("dojangCode") String dojangCode,
